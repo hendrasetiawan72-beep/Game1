@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { GameState } from '../types/game';
 import { sound } from '../utils/audio';
-import { Award, Trophy, Star, Sparkles, RotateCcw, CheckCircle2, Send, Clock, User, GraduationCap } from 'lucide-react';
+import { Award, Trophy, Key, RotateCcw, CheckCircle2, Send, Clock, User, GraduationCap } from 'lucide-react';
 
 interface VictoryModalProps {
   gameState: GameState;
@@ -20,7 +20,6 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
   elapsedSeconds,
   onPlayAgain
 }) => {
-  const totalStars = Object.values(gameState.chapterStars).reduce((a, b) => a + b, 0);
   const [hasSentSuccessfully, setHasSentSuccessfully] = useState<boolean>(false);
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -84,7 +83,7 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
         {/* Banner & Golden Trophy */}
         <div className="space-y-1.5">
           <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-[#FFF1B8] border-2 border-[#4A4A5E] text-[11px] font-black text-[#4A4A5E] shadow-xs">
-            <Sparkles size={13} className="text-amber-500" />
+            <Award size={13} className="text-amber-600" />
             <span>25th Silver Jubilee • SMK Muhammadiyah Bawang</span>
           </div>
 
@@ -135,10 +134,10 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
           </div>
 
           <div className="p-2 rounded-2xl bg-white border-2 border-[#4A4A5E]/20">
-            <span className="text-[8px] sm:text-[9px] uppercase font-bold text-[#7A7A8E] block truncate">Stars</span>
-            <div className="flex items-center justify-center gap-0.5 text-amber-500 font-black text-sm mt-0.5">
-              <Star size={13} className="fill-amber-400" />
-              <span>{totalStars}/9</span>
+            <span className="text-[8px] sm:text-[9px] uppercase font-bold text-[#7A7A8E] block truncate">Clues Gathered</span>
+            <div className="flex items-center justify-center gap-1 text-[#E67E22] font-black text-sm mt-0.5">
+              <Key size={13} />
+              <span>{gameState.collectedClues.length}/7</span>
             </div>
           </div>
 
@@ -180,7 +179,7 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
             <input type="hidden" name="student_class" value={studentClass} />
             <input type="hidden" name="major" value={major} />
             <input type="hidden" name="final_score" value={gameState.score} />
-            <input type="hidden" name="stars_earned" value={`${totalStars} / 9`} />
+            <input type="hidden" name="chapters_cleared" value="3 / 3 Chapters Completed" />
             <input type="hidden" name="trust_meter" value={`${gameState.trustMeter}%`} />
             <input type="hidden" name="clues_found" value={`${gameState.collectedClues.length} / 7`} />
             <input type="hidden" name="time_elapsed" value={formatTime(elapsedSeconds)} />

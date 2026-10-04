@@ -712,8 +712,9 @@ export const DIALOGUE_NODES: Record<string, DialogueNode> = {
       {
         "text": "Exactly! Thank you for guarding our campus day and night, Pak Slamet.",
         "isCorrect": true,
-        "trustChange": 10,
-        "feedback": "Appreciative agreement that honors dedication."
+        "trustChange": 15,
+        "unlockClueId": "clue_restoration_photo",
+        "feedback": "Appreciative agreement! Pak Slamet hands you the workshop archival photograph showing Senior Rafi and teachers safely restoring the trophy."
       },
       {
         "text": "School anniversaries are noisy and boring.",
@@ -888,10 +889,11 @@ export const DIALOGUE_NODES: Record<string, DialogueNode> = {
         "feedback": "Masterful polite disagreement that protects school unity."
       },
       {
-        "text": "From my point of view, we should consult the teachers before taking any action.",
+        "text": "From my point of view, we should check the campus CCTV server logs before making any assumptions.",
         "isCorrect": true,
-        "trustChange": 12,
-        "feedback": "Wise administrative advice using 'From my point of view'!"
+        "trustChange": 15,
+        "unlockClueId": "clue_server_backup",
+        "feedback": "Prudent and factual! Fajar shares the IT camera ping log showing routine server maintenance, not tampering!"
       }
     ]
   },
@@ -1018,7 +1020,8 @@ export const DIALOGUE_NODES: Record<string, DialogueNode> = {
         "text": "You're absolutely right! The golden shine and precision engraving look magnificent.",
         "isCorrect": true,
         "trustChange": 20,
-        "feedback": "Strong positive agreement honoring great craftsmanship!"
+        "unlockClueId": "clue_jubilee_ribbon",
+        "feedback": "Strong positive agreement! Rafi presents the official Jubilee Golden Ribbon and engraved plaque attached to the trophy!"
       },
       {
         "text": "I couldn't agree more! It is an absolute masterpiece of craftsmanship!",

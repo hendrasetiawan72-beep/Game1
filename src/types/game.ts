@@ -104,7 +104,21 @@ export interface GameState {
     3: number;
   };
   talkedNpcs: string[];
+  answeredNpcs?: Record<string, AnsweredNPCRecord>;
   gameCompleted: boolean;
+}
+
+export interface AnsweredNPCRecord {
+  npcId: string;
+  speaker: string;
+  speakerRole: string;
+  avatarType: string;
+  questionText: string;
+  chosenAnswer: string;
+  feedback: string;
+  isCorrect: boolean;
+  trustChange: number;
+  chapter: number;
 }
 
 export interface InspectData {

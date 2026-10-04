@@ -1,7 +1,7 @@
 import React from 'react';
 import { CLUE_CARDS } from '../data/clues';
 import { sound } from '../utils/audio';
-import { Key, Volume2, X, Trophy, Shield, Coffee, Wrench, Cable, Book, Sparkles } from 'lucide-react';
+import { Key, Volume2, X, Trophy, Shield, Coffee, Wrench, Cable, Book, Award } from 'lucide-react';
 
 interface InventoryModalProps {
   collectedClueIds: string[];
@@ -96,7 +96,7 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({ collectedClueIds
                       {/* Key Phrase Highlight */}
                       <div className="p-2 rounded-xl bg-[#FFF9E6] border border-[#F5B041]/30">
                         <div className="flex items-center gap-1 text-[9px] font-black text-[#B7950B] uppercase">
-                          <Sparkles size={10} />
+                          <Award size={10} />
                           <span>Target Expression:</span>
                         </div>
                         <p className="text-xs font-black text-[#4A4A5E]">{clue.phrase}</p>

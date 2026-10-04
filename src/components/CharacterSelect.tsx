@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { AvatarType, MajorType } from '../types/game';
 import { sound } from '../utils/audio';
-import { Sparkles, Wrench, FileSpreadsheet, Network, ArrowRight, GraduationCap } from 'lucide-react';
+import { Award, Wrench, FileSpreadsheet, Network, ArrowRight, GraduationCap } from 'lucide-react';
 
 interface CharacterSelectProps {
   onStart: (name: string, studentClass: string, avatar: AvatarType, major: MajorType) => void;
@@ -37,7 +37,7 @@ export const CharacterSelect: React.FC<CharacterSelectProps> = ({ onStart }) => 
         {/* Title Header */}
         <div className="text-center space-y-1.5">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FFF1B8] border border-[#4A4A5E] text-[11px] font-black text-[#4A4A5E]">
-            <Sparkles size={13} className="text-amber-500" />
+            <Award size={13} className="text-amber-600" />
             <span>SMK Muhammadiyah Bawang • 25th Silver Jubilee</span>
           </div>
           <h1 className="text-xl sm:text-2xl font-black text-[#4A4A5E] font-['Nunito'] tracking-tight">

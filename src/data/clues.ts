@@ -57,11 +57,29 @@ export const CLUE_CARDS: ClueCard[] = [
   },
   {
     id: 'clue_principal_note',
-    title: "Principal's Secret Seal",
+    title: "Principal's Secret Authorization",
     phrase: "I couldn't agree more.",
     chapter: 3,
-    foundAt: 'Honor Stage Podium',
-    description: 'A signed approval letter from Principal Pak Haryono authorizing Senior Rafi to restore the tarnished 1999 trophy.',
+    foundAt: 'Honor Stage Podium (Pak Haryono)',
+    description: 'A signed approval letter from Principal Pak Haryono authorizing Senior Rafi to restore and polish the tarnished 1999 trophy.',
+    iconType: 'shield'
+  },
+  {
+    id: 'clue_jubilee_ribbon',
+    title: 'Jubilee Golden Ribbon & Plaque',
+    phrase: "You're absolutely right!",
+    chapter: 3,
+    foundAt: "Senior Rafi's Presentation Case",
+    description: 'A ceremonial silk green and gold ribbon with an engraved brass plate reading "25 Years of SMK Muhiba Excellence".',
     iconType: 'trophy'
+  },
+  {
+    id: 'clue_restoration_photo',
+    title: 'Workshop Restoration Photo',
+    phrase: "From my point of view...",
+    chapter: 3,
+    foundAt: 'Campus Security Archive (Pak Slamet)',
+    description: 'A clear timestamped photo showing Senior Rafi, Pak Joko, and teachers carefully cleaning the trophy inside the workshop.',
+    iconType: 'book'
   }
 ];

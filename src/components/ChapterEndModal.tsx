@@ -1,17 +1,16 @@
 import React from 'react';
 import { sound } from '../utils/audio';
-import { Star, ArrowRight, Sparkles, CheckCircle2 } from 'lucide-react';
+import { Award, ArrowRight, CheckCircle2 } from 'lucide-react';
 
 interface ChapterEndModalProps {
   completedChapter: 1 | 2;
-  stars: number;
+  stars?: number;
   cluesCount: number;
   onAdvanceChapter: () => void;
 }
 
 export const ChapterEndModal: React.FC<ChapterEndModalProps> = ({
   completedChapter,
-  stars,
   cluesCount,
   onAdvanceChapter
 }) => {
@@ -22,7 +21,7 @@ export const ChapterEndModal: React.FC<ChapterEndModalProps> = ({
       <div className="w-full max-w-md bg-[#FFFDF9] border-3 border-[#4A4A5E] rounded-3xl p-5 sm:p-6 shadow-2xl flex flex-col space-y-4 text-center animate-in zoom-in-95 duration-200">
         <div className="space-y-1">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FFF1B8] border border-[#4A4A5E] text-[11px] font-black text-[#4A4A5E]">
-            <Sparkles size={13} className="text-amber-500" />
+            <Award size={13} className="text-amber-600" />
             <span>Day {completedChapter} Complete!</span>
           </div>
           <h2 className="text-xl font-black text-[#4A4A5E] font-['Nunito'] pt-0.5">
@@ -35,23 +34,21 @@ export const ChapterEndModal: React.FC<ChapterEndModalProps> = ({
           </p>
         </div>
 
-        {/* Stars */}
-        <div className="flex justify-center gap-2 py-0.5">
-          {[1, 2, 3].map(s => (
-            <Star
-              key={s}
-              size={32}
-              className={`${
-                s <= stars ? 'text-amber-400 fill-amber-400 scale-110' : 'text-gray-300'
-              } transition-all`}
-            />
-          ))}
+        {/* Assessment Evaluation Badge */}
+        <div className="flex justify-center py-1">
+          <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-2xl bg-[#E8F8F5] border-2 border-[#27AE60] text-[#1E8449]">
+            <Award size={24} className="text-[#27AE60]" />
+            <div className="text-left">
+              <div className="text-[10px] uppercase font-bold text-[#27AE60]">Investigation Status</div>
+              <div className="text-sm font-black">Day {completedChapter} Passed Successfully</div>
+            </div>
+          </div>
         </div>
 
         <div className="p-3 rounded-2xl bg-[#FFFBF5] border-2 border-[#4A4A5E]/20 text-xs space-y-1.5 text-left">
           <div className="flex items-center gap-2 text-green-700 font-bold">
             <CheckCircle2 size={15} />
-            <span>Chapter {completedChapter} Quiz Completed ({stars} Stars)</span>
+            <span>Day {completedChapter} Assessment Quiz Completed</span>
           </div>
           <div className="flex items-center gap-2 text-[#4A4A5E] font-bold">
             <CheckCircle2 size={15} />

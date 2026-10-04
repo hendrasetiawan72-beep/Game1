@@ -692,25 +692,71 @@ export class ProceduralRenderer {
     ctx.restore();
   }
 
-  // Draw NPC with expressive avatar & uniform
+  // Draw NPC with expressive avatar, breathing & waving animation
   public static drawNPC(
     ctx: CanvasRenderingContext2D,
     npc: NPCData,
     playerX: number,
     playerY: number,
-    timeTick: number
+    timeTick: number,
+    isAnswered: boolean = false
   ) {
     const dist = Math.hypot(npc.x - playerX, npc.y - playerY);
-    const isNearby = dist < 75;
-    const idleBob = Math.sin(timeTick * 0.06 + npc.x) * 2;
+    const isNearby = dist < 85;
+
+    // Organic Breathing cycle (torso expansion & natural gentle head bobbing)
+    const breatheCycle = Math.sin(timeTick * 0.07 + npc.x * 0.05);
+    const idleBob = breatheCycle * 1.8;
+    const chestExpansion = 1 + breatheCycle * 0.04;
+
+    // Friendly Hand Wave Animation
+    // Periodic waving cycle: every ~130 ticks, waves for 38 ticks when not yet interviewed
+    const waveCycle = (timeTick + (npc.x % 90)) % 130;
+    const isWaving = waveCycle < 38 && !isAnswered;
+    const waveHandAngle = isWaving ? Math.sin(timeTick * 0.35) * 0.45 : 0;
 
     ctx.save();
     this.drawShadow(ctx, npc.x, npc.y + 24, 15, 7);
 
-    // Body / Outfit
+    // Body / Outfit with breathing scale
+    ctx.save();
+    ctx.translate(npc.x, npc.y + 12 + idleBob);
+    ctx.scale(chestExpansion, 1);
+    ctx.translate(-npc.x, -(npc.y + 12 + idleBob));
     this.drawNPCOutfit(ctx, npc.avatarType, npc.x, npc.y + idleBob);
+    ctx.restore();
 
-    // Head
+    // Animated Waving Arm & Hand
+    if (isWaving) {
+      ctx.save();
+      const shoulderX = npc.x + 13;
+      const shoulderY = npc.y + 4 + idleBob;
+      ctx.translate(shoulderX, shoulderY);
+      ctx.rotate(-0.8 + waveHandAngle);
+
+      // Forearm
+      this.roundRect(ctx, 0, -16, 6, 18, 3, '#FDEBD0', '#4A4A5E', 1);
+
+      // Open waving hand / palm
+      ctx.beginPath();
+      ctx.arc(3, -19, 5, 0, Math.PI * 2);
+      ctx.fillStyle = '#FDEBD0';
+      ctx.fill();
+      ctx.stroke();
+
+      // Finger lines
+      ctx.strokeStyle = '#4A4A5E';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(1, -21); ctx.lineTo(1, -24);
+      ctx.moveTo(3, -21); ctx.lineTo(3, -25);
+      ctx.moveTo(5, -21); ctx.lineTo(5, -24);
+      ctx.stroke();
+
+      ctx.restore();
+    }
+
+    // Head with breathing position
     const headY = npc.y - 12 + idleBob;
     ctx.beginPath();
     ctx.arc(npc.x, headY, 15, 0, Math.PI * 2);
@@ -748,19 +794,92 @@ export class ProceduralRenderer {
     ctx.fill();
 
     // Name badge tag
-    this.roundRect(ctx, npc.x - 38, npc.y - 42 + idleBob, 76, 16, 8, '#FFFBF5', '#4A4A5E');
+    this.roundRect(ctx, npc.x - 40, npc.y - 42 + idleBob, 80, 16, 8, '#FFFBF5', '#4A4A5E');
     ctx.fillStyle = '#4A4A5E';
     ctx.font = 'bold 9px Poppins, sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText(npc.name, npc.x, npc.y - 31 + idleBob);
 
-    // Nearby interaction prompt bubble
-    if (isNearby) {
-      const bubbleY = npc.y - 60 + idleBob + Math.sin(timeTick * 0.1) * 3;
-      this.roundRect(ctx, npc.x - 28, bubbleY, 56, 18, 9, '#BFDDF5', '#4A4A5E');
-      ctx.fillStyle = '#4A4A5E';
-      ctx.font = 'bold 9px Poppins, sans-serif';
-      ctx.fillText('💬 TALK', npc.x, bubbleY + 12);
+    // Interviewed (LOGGED) or Un-interviewed Guidance Indicator
+    if (isAnswered) {
+      // Completed interview checkmark badge
+      const badgeY = npc.y - 58 + idleBob;
+      this.roundRect(ctx, npc.x - 26, badgeY, 52, 15, 7, '#BFE8D6', '#27AE60', 1.5);
+      ctx.fillStyle = '#1E8449';
+      ctx.font = 'bold 8.5px Poppins, Nunito, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('✓ LOGGED', npc.x, badgeY + 11);
+    } else if (isNearby) {
+      // Nearby active talk prompt bubble (bouncing cyan button)
+      const bounce = Math.sin(timeTick * 0.14) * 3;
+      const bubbleY = npc.y - 66 + idleBob + bounce;
+      const bW = 68;
+      const bH = 20;
+
+      // Small speech bubble pointer
+      ctx.beginPath();
+      ctx.moveTo(npc.x - 4, bubbleY + bH - 1);
+      ctx.lineTo(npc.x + 4, bubbleY + bH - 1);
+      ctx.lineTo(npc.x, bubbleY + bH + 4);
+      ctx.closePath();
+      ctx.fillStyle = '#5DADE2';
+      ctx.fill();
+      ctx.strokeStyle = '#2C3E50';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      this.roundRect(ctx, npc.x - bW / 2, bubbleY, bW, bH, 10, '#5DADE2', '#2C3E50', 2);
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = '900 9.5px Nunito, Poppins, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('💬 TALK', npc.x, bubbleY + 14);
+    } else {
+      // Visual indicator for un-interviewed NPCs: floating golden speech bubble with pulsing aura & alert pip
+      const floatY = Math.sin(timeTick * 0.08 + (npc.x % 50)) * 4;
+      const pulse = (Math.sin(timeTick * 0.12 + (npc.x % 30)) + 1) / 2; // 0 to 1
+      const bubbleY = npc.y - 68 + idleBob + floatY;
+      const bW = 64;
+      const bH = 19;
+      const bX = npc.x - bW / 2;
+
+      // Pulsing golden aura circle behind bubble
+      ctx.beginPath();
+      ctx.arc(npc.x, bubbleY + bH / 2, 16 + pulse * 6, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(243, 156, 18, ${0.28 - pulse * 0.18})`;
+      ctx.fill();
+
+      // Small speech bubble downward pointer
+      ctx.beginPath();
+      ctx.moveTo(npc.x - 4, bubbleY + bH - 1);
+      ctx.lineTo(npc.x + 4, bubbleY + bH - 1);
+      ctx.lineTo(npc.x, bubbleY + bH + 4);
+      ctx.closePath();
+      ctx.fillStyle = '#FFF1B8';
+      ctx.fill();
+      ctx.strokeStyle = '#4A4A5E';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      // Main floating bubble
+      this.roundRect(ctx, bX, bubbleY, bW, bH, 9, '#FFF1B8', '#4A4A5E', 1.8);
+
+      // Pulsing red/amber notification pip on upper right
+      const pipX = bX + bW - 2;
+      const pipY = bubbleY + 2;
+      ctx.beginPath();
+      ctx.arc(pipX, pipY, 3.2 + pulse * 1.2, 0, Math.PI * 2);
+      ctx.fillStyle = '#E74C3C';
+      ctx.fill();
+      ctx.strokeStyle = '#FFFFFF';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      // Label inside bubble
+      ctx.fillStyle = '#78350F';
+      ctx.font = '800 8.5px Nunito, Poppins, sans-serif';
+      ctx.textAlign = 'center';
+      const labelText = isWaving ? '👋 TALK' : '💬 INTERVIEW';
+      ctx.fillText(labelText, npc.x - 1, bubbleY + 13);
     }
 
     ctx.restore();

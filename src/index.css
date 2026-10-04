@@ -1,1 +1,37 @@
 @import "tailwindcss";
+
+@keyframes npcBreathe {
+  0%, 100% {
+    transform: translateY(0px) scale(1, 1);
+  }
+  50% {
+    transform: translateY(-3px) scale(1.03, 0.97);
+  }
+}
+
+@keyframes handWave {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  20% {
+    transform: rotate(14deg);
+  }
+  40% {
+    transform: rotate(-10deg);
+  }
+  60% {
+    transform: rotate(14deg);
+  }
+  80% {
+    transform: rotate(-6deg);
+  }
+}
+
+.animate-npc-breathe {
+  animation: npcBreathe 3s ease-in-out infinite;
+}
+
+.animate-hand-wave {
+  animation: handWave 2s ease-in-out infinite;
+  transform-origin: bottom center;
+}

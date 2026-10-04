@@ -1,8 +1,9 @@
 import React from 'react';
 import { GameState, ZoneId } from '../types/game';
 import { sound } from '../utils/audio';
-import { BookOpen, HelpCircle, Key, Star, Volume2, VolumeX, Award, Clock, LogOut } from 'lucide-react';
+import { BookOpen, HelpCircle, Key, Trophy, Volume2, VolumeX, Award, Clock, LogOut, Flame, Lock } from 'lucide-react';
 import { MAP_ZONES } from '../game/mapData';
+import { getRequiredCluesForDay } from '../utils/gameRules';
 
 interface HUDProps {
   gameState: GameState;
@@ -10,10 +11,16 @@ interface HUDProps {
   playerName: string;
   studentClass: string;
   elapsedSeconds: number;
+  dailyStreak: number;
+  isDailyMissionCompleted: boolean;
+  isQuizUnlocked?: boolean;
+  answeredConversationsCount?: number;
+  totalConversationsCount?: number;
   onExitToCourtyard: () => void;
   onOpenPhraseBank: () => void;
   onOpenInventory: () => void;
   onOpenQuiz: () => void;
+  onOpenDailyMission: () => void;
   onRestart: () => void;
 }
 
@@ -23,10 +30,16 @@ export const HUD: React.FC<HUDProps> = ({
   playerName,
   studentClass,
   elapsedSeconds,
+  dailyStreak,
+  isDailyMissionCompleted,
+  isQuizUnlocked = false,
+  answeredConversationsCount = 0,
+  totalConversationsCount = 0,
   onExitToCourtyard,
   onOpenPhraseBank,
   onOpenInventory,
   onOpenQuiz,
+  onOpenDailyMission,
   onRestart
 }) => {
   const [muted, setMuted] = React.useState<boolean>(!sound.isEnabled());
@@ -39,7 +52,9 @@ export const HUD: React.FC<HUDProps> = ({
     if (!next) sound.playClick();
   };
 
-  const isQuizReady = !gameState.completedQuizzes[gameState.currentChapter];
+  const requiredClues = getRequiredCluesForDay(gameState.currentChapter);
+  const hasEnoughClues = gameState.collectedClues.length >= requiredClues;
+  const isQuizCompleted = gameState.completedQuizzes[gameState.currentChapter];
 
   // Format elapsed seconds as MM:SS
   const formatTime = (totalSec: number) => {
@@ -88,7 +103,7 @@ export const HUD: React.FC<HUDProps> = ({
           </div>
         </div>
 
-        {/* Right: Actions, Quick Exit, Clues, Quiz */}
+        {/* Right: Actions, Quick Exit, Clues, Quiz, Daily Mission */}
         <div className="flex items-center justify-between sm:justify-end gap-1 overflow-x-auto pt-0.5 sm:pt-0">
           {/* Prominent Exit to Courtyard Button when inside any lab */}
           {currentZone !== 'courtyard' && (
@@ -105,22 +120,44 @@ export const HUD: React.FC<HUDProps> = ({
             </button>
           )}
 
-          {/* Score & Stars */}
-          <div className="flex items-center gap-1 px-2 py-0.5 rounded-xl bg-[#FFFBF5] border border-[#4A4A5E]/20 text-[11px] font-bold text-[#4A4A5E] shrink-0">
-            <Star size={12} className="text-amber-500 fill-amber-400" />
-            <span>{gameState.score}</span>
+          {/* Daily Mission with Streak counter */}
+          <button
+            onClick={() => {
+              sound.playClick();
+              onOpenDailyMission();
+            }}
+            className={`flex items-center gap-1 px-2.5 py-0.5 rounded-full border border-[#4A4A5E] text-[11px] font-black active:scale-95 transition-all shadow-xs shrink-0 ${
+              isDailyMissionCompleted
+                ? 'bg-[#FFF1B8] text-[#4A4A5E]'
+                : 'bg-gradient-to-r from-amber-400 to-orange-400 text-white animate-pulse'
+            }`}
+            title="Daily English Opinion Mission"
+          >
+            <Flame size={12} className={isDailyMissionCompleted ? 'text-orange-500 fill-orange-400' : 'text-white fill-white'} />
+            <span>Daily ({dailyStreak}d)</span>
+            {!isDailyMissionCompleted && (
+              <span className="w-1.5 h-1.5 rounded-full bg-red-600 animate-ping ml-0.5" />
+            )}
+          </button>
+
+          {/* Score & Day Indicators */}
+          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-xl bg-[#FFFBF5] border border-[#4A4A5E]/20 text-[11px] font-bold text-[#4A4A5E] shrink-0">
+            <Trophy size={12} className="text-amber-600" />
+            <span className="font-extrabold">{gameState.score} pts</span>
             <div className="flex items-center gap-0.5 ml-0.5">
               {[1, 2, 3].map(ch => (
                 <div
                   key={ch}
-                  className={`w-2.5 h-2.5 rounded-full flex items-center justify-center text-[7px] font-black ${
-                    gameState.chapterStars[ch as 1 | 2 | 3] > 0
-                      ? 'bg-amber-400 text-white'
+                  className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-[8px] font-black ${
+                    gameState.completedQuizzes[ch as 1 | 2 | 3]
+                      ? 'bg-[#27AE60] text-white'
+                      : ch === gameState.currentChapter
+                      ? 'bg-[#5DADE2] text-white'
                       : 'bg-gray-200 text-gray-400'
                   }`}
-                  title={`Chapter ${ch}: ${gameState.chapterStars[ch as 1 | 2 | 3]} stars`}
+                  title={`Day ${ch}: ${gameState.completedQuizzes[ch as 1 | 2 | 3] ? 'Completed' : 'Pending'}`}
                 >
-                  ★
+                  {gameState.completedQuizzes[ch as 1 | 2 | 3] ? '✓' : `D${ch}`}
                 </div>
               ))}
             </div>
@@ -152,21 +189,39 @@ export const HUD: React.FC<HUDProps> = ({
             <span>Clues ({gameState.collectedClues.length})</span>
           </button>
 
-          {/* Quiz Button */}
+          {/* Quiz Button - Locked until all required clues and conversations for current day are completed */}
           <button
             onClick={() => {
               sound.playClick();
               onOpenQuiz();
             }}
-            className={`flex items-center gap-1 px-2.5 py-0.5 rounded-full border border-[#4A4A5E] font-black text-[11px] transition-all shadow-xs shrink-0 ${
-              isQuizReady
-                ? 'bg-[#BFE8D6] text-[#4A4A5E] animate-bounce'
-                : 'bg-[#DCCFF0] text-[#4A4A5E]'
+            className={`flex items-center gap-1 px-2.5 py-0.5 rounded-full border border-[#4A4A5E] font-black text-[11px] transition-all shadow-xs shrink-0 cursor-pointer ${
+              isQuizCompleted
+                ? 'bg-[#E8F8F5] text-[#27AE60]'
+                : isQuizUnlocked
+                ? 'bg-[#BFE8D6] text-[#1E8449] animate-bounce ring-2 ring-emerald-400'
+                : 'bg-[#FFF1B8] text-amber-900 border-amber-600'
             }`}
-            title="Take Chapter Quiz"
+            title={
+              isQuizCompleted
+                ? 'Day Assessment Completed'
+                : isQuizUnlocked
+                ? 'Day Assessment Quiz Ready! Click to open'
+                : `Day ${gameState.currentChapter} Assessment: Clues (${gameState.collectedClues.length}/${requiredClues}), Interviews (${answeredConversationsCount}/${totalConversationsCount})`
+            }
           >
-            <Award size={12} />
-            <span>Quiz</span>
+            {isQuizCompleted || isQuizUnlocked ? (
+              <Award size={12} className={isQuizUnlocked && !isQuizCompleted ? 'text-[#1E8449]' : ''} />
+            ) : (
+              <Lock size={12} className="text-amber-800" />
+            )}
+            <span>
+              {isQuizCompleted
+                ? 'Quiz Done'
+                : isQuizUnlocked
+                ? 'Quiz Ready!'
+                : `Quiz (${gameState.collectedClues.length}/${requiredClues})`}
+            </span>
           </button>
 
           {/* Audio toggle */}

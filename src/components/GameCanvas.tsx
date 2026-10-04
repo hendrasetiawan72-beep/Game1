@@ -16,6 +16,7 @@ interface GameCanvasProps {
   virtualDirection: { x: number; y: number } | null;
   onRegisterInteractTrigger?: (triggerFn: () => void) => void;
   setNearbyInteractable: (has: boolean) => void;
+  isPaused?: boolean;
 }
 
 export const GameCanvas: React.FC<GameCanvasProps> = ({
@@ -28,13 +29,15 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   onInspectObject,
   virtualDirection,
   onRegisterInteractTrigger,
-  setNearbyInteractable
+  setNearbyInteractable,
+  isPaused = false
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const keysDown = useRef<Record<string, boolean>>({});
   const clickTarget = useRef<{ x: number; y: number } | null>(null);
   const timeTickRef = useRef<number>(0);
   const playerRef = useRef<PlayerState>(player);
+  const lastDoorTriggerTime = useRef<number>(0);
 
   playerRef.current = player;
   const zone = MAP_ZONES[player.zone];
@@ -46,32 +49,58 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     return true;
   });
 
-  // Check collision with obstacles
-  const checkCollision = useCallback((x: number, y: number, radius: number = 14) => {
+  // Check collision with obstacles and NPCs.
+  // If moving AWAY from or reducing overlap with an obstacle or NPC, the movement is permitted,
+  // preventing the player from ever getting stuck.
+  const isPositionBlocked = useCallback((toX: number, toY: number, fromX: number, fromY: number, radius: number = 8) => {
     const curZone = MAP_ZONES[playerRef.current.zone];
     if (!curZone) return false;
 
-    // Check boundary margins
-    if (x - radius < 0 || x + radius > curZone.width || y - radius < 0 || y + radius > curZone.height) {
-      return true;
+    // Check boundary margins (allow moving away from boundary if already out)
+    if (toX - radius < 12) {
+      if (toX < fromX) return true; // Moving deeper into left wall
+    }
+    if (toX + radius > curZone.width - 12) {
+      if (toX > fromX) return true; // Moving deeper into right wall
+    }
+    if (toY - radius < 12) {
+      if (toY < fromY) return true; // Moving deeper into top wall
+    }
+    if (toY + radius > curZone.height - 12) {
+      if (toY > fromY) return true; // Moving deeper into bottom wall
     }
 
     // Check map obstacles
     for (const obs of curZone.obstacles) {
-      const closestX = Math.max(obs.x, Math.min(x, obs.x + obs.w));
-      const closestY = Math.max(obs.y, Math.min(y, obs.y + obs.h));
-      const distX = x - closestX;
-      const distY = y - closestY;
-      if (distX * distX + distY * distY < radius * radius) {
+      const closestToX = Math.max(obs.x, Math.min(toX, obs.x + obs.w));
+      const closestToY = Math.max(obs.y, Math.min(toY, obs.y + obs.h));
+      const distToSq = (toX - closestToX) ** 2 + (toY - closestToY) ** 2;
+
+      if (distToSq < radius * radius) {
+        // Overlapping with obstacle.
+        // Compare with previous distance:
+        const closestFromX = Math.max(obs.x, Math.min(fromX, obs.x + obs.w));
+        const closestFromY = Math.max(obs.y, Math.min(fromY, obs.y + obs.h));
+        const distFromSq = (fromX - closestFromX) ** 2 + (fromY - closestFromY) ** 2;
+
+        // If moving AWAY from the obstacle (distance is increasing), ALLOW IT!
+        if (distToSq > distFromSq + 0.001) {
+          continue;
+        }
         return true;
       }
     }
 
-    // Check NPC collision
+    // Check NPC collision (NPC foot radius ~8, player foot radius ~8 -> combined ~16)
+    const combinedNpcRadius = radius + 8;
     for (const npc of activeNPCs) {
-      const dx = x - npc.x;
-      const dy = y - npc.y;
-      if (dx * dx + dy * dy < (radius + 14) * (radius + 14)) {
+      const distToSq = (toX - npc.x) ** 2 + (toY - (npc.y + 10)) ** 2;
+      if (distToSq < combinedNpcRadius * combinedNpcRadius) {
+        const distFromSq = (fromX - npc.x) ** 2 + (fromY - (npc.y + 10)) ** 2;
+        // If moving away from NPC, ALLOW IT!
+        if (distToSq > distFromSq + 0.001) {
+          continue;
+        }
         return true;
       }
     }
@@ -206,6 +235,16 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       const curP = playerRef.current;
       const curZone = MAP_ZONES[curP.zone];
 
+      if (isPaused) {
+        if (curP.isMoving) {
+          onUpdatePlayer({ isMoving: false });
+        }
+        clickTarget.current = null;
+        render();
+        animId = requestAnimationFrame(loop);
+        return;
+      }
+
       let vx = 0;
       let vy = 0;
       const speed = 3.6;
@@ -233,6 +272,26 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         }
       }
 
+      // Failsafe auto-unstuck: If player is embedded inside an obstacle, nudge outward to safety
+      if (curZone) {
+        for (const obs of curZone.obstacles) {
+          const closestX = Math.max(obs.x, Math.min(curP.x, obs.x + obs.w));
+          const closestY = Math.max(obs.y, Math.min(curP.y, obs.y + obs.h));
+          const dx = curP.x - closestX;
+          const dy = curP.y - closestY;
+          const distSq = dx * dx + dy * dy;
+          if (distSq < 8 * 8) {
+            const dist = Math.sqrt(distSq) || 1;
+            const pushX = (dx / dist) * 2.5;
+            const pushY = (dy / dist) * 2.5;
+            const newX = curP.x + (pushX !== 0 ? pushX : 0);
+            const newY = curP.y + (pushY !== 0 ? pushY : 2.5);
+            onUpdatePlayer({ x: newX, y: newY });
+            break;
+          }
+        }
+      }
+
       const len = Math.hypot(vx, vy);
       let newDir = curP.direction;
 
@@ -249,10 +308,10 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         let nextX = curP.x;
         let nextY = curP.y;
 
-        if (!checkCollision(curP.x + normX, curP.y)) {
+        if (!isPositionBlocked(curP.x + normX, curP.y, curP.x, curP.y)) {
           nextX = curP.x + normX;
         }
-        if (!checkCollision(nextX, curP.y + normY)) {
+        if (!isPositionBlocked(nextX, curP.y + normY, curP.x, curP.y)) {
           nextY = curP.y + normY;
         }
 
@@ -268,8 +327,9 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         onUpdatePlayer({ isMoving: false });
       }
 
-      // Check door triggers (walk directly onto door mat)
-      if (curZone) {
+      // Check door triggers (walk directly onto door mat) with 1200ms debounce
+      const now = Date.now();
+      if (!isPaused && curZone && now - lastDoorTriggerTime.current > 1200) {
         for (const door of curZone.doors) {
           if (
             curP.x >= door.x - 20 &&
@@ -277,6 +337,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
             curP.y >= door.y - 20 &&
             curP.y <= door.y + door.h + 20
           ) {
+            lastDoorTriggerTime.current = now;
             sound.playSparkle();
             clickTarget.current = null;
             onEnterDoor(door.targetZone, door.targetX, door.targetY);
@@ -288,6 +349,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         if (curP.zone !== 'courtyard' && curP.y >= 540 && curP.x >= 320 && curP.x <= 580) {
           const exitDoor = curZone.doors[0];
           if (exitDoor) {
+            lastDoorTriggerTime.current = now;
             sound.playSparkle();
             clickTarget.current = null;
             onEnterDoor(exitDoor.targetZone, exitDoor.targetX, exitDoor.targetY);
@@ -340,7 +402,8 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       ProceduralRenderer.drawZone(ctx, p.zone, gameState.currentChapter, timeTickRef.current);
 
       activeNPCs.forEach(npc => {
-        ProceduralRenderer.drawNPC(ctx, npc, p.x, p.y, timeTickRef.current);
+        const isAnswered = !!gameState.answeredNpcs?.[`${npc.id}_ch${gameState.currentChapter}`];
+        ProceduralRenderer.drawNPC(ctx, npc, p.x, p.y, timeTickRef.current, isAnswered);
       });
 
       ProceduralRenderer.drawPlayer(ctx, p, timeTickRef.current);
@@ -372,7 +435,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     animId = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(animId);
   }, [
-    checkCollision,
+    isPositionBlocked,
     getNearestInteractable,
     onEnterDoor,
     onUpdatePlayer,

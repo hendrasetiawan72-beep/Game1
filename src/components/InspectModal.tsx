@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { sound } from '../utils/audio';
-import { Search, Sparkles, X, Volume2, CheckCircle2, ArrowRight } from 'lucide-react';
+import { Search, Key, X, Volume2, CheckCircle2, ArrowRight } from 'lucide-react';
 import { InspectData } from '../types/game';
 
 interface InspectModalProps {
@@ -93,7 +93,7 @@ export const InspectModal: React.FC<InspectModalProps> = ({
 
         {data.clueUnlocked && (
           <div className="p-2.5 rounded-2xl bg-[#E8F8F5] border-2 border-[#27AE60] flex items-center gap-2 text-xs font-black text-[#27AE60] animate-bounce">
-            <Sparkles size={15} className="text-amber-500 shrink-0" />
+            <Key size={15} className="text-amber-500 shrink-0" />
             <span>New Clue Card added to your Case Dossier!</span>
           </div>
         )}

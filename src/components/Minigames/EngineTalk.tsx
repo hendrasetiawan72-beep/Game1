@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { sound } from '../../utils/audio';
-import { Gauge, RotateCcw, Wrench, X, Sparkles, Volume2 } from 'lucide-react';
+import { Gauge, RotateCcw, Wrench, X, Award, Volume2 } from 'lucide-react';
 
 interface EngineTalkProps {
   onClose: () => void;
@@ -209,7 +209,7 @@ export const EngineTalk: React.FC<EngineTalkProps> = ({ onClose, onComplete }) =
         {/* Success Alert */}
         {isRoundSuccess && (
           <div className="mt-2 p-2 rounded-2xl bg-[#E8F8F5] border-2 border-[#27AE60] flex items-center gap-2 text-xs font-bold text-[#27AE60] animate-pulse">
-            <Sparkles size={15} />
+            <Award size={15} />
             <span>Vroom! Engine tuned with polite English! Advancing...</span>
           </div>
         )}

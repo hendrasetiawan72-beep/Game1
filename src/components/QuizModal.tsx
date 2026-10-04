@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { CHAPTER_QUIZZES } from '../data/quizzes';
 import { sound } from '../utils/audio';
-import { Award, CheckCircle2, AlertCircle, Star, ArrowRight, X, RotateCcw, CheckSquare, Square } from 'lucide-react';
+import { Award, CheckCircle2, AlertCircle, ArrowRight, X, RotateCcw, CheckSquare, Square } from 'lucide-react';
 
 interface QuizModalProps {
   chapter: 1 | 2 | 3;
@@ -259,19 +259,17 @@ export const QuizModal: React.FC<QuizModalProps> = ({
               </p>
             </div>
 
-            {/* Stars rating */}
-            <div className="flex justify-center gap-2 py-1">
-              {[1, 2, 3].map(s => (
-                <Star
-                  key={s}
-                  size={36}
-                  className={`transition-all ${
-                    s <= starsEarned
-                      ? 'text-amber-400 fill-amber-400 drop-shadow-md scale-110'
-                      : 'text-gray-300'
-                  }`}
-                />
-              ))}
+            {/* Score & Evaluation Badge */}
+            <div className="flex justify-center py-1">
+              <div className="inline-flex items-center gap-2.5 px-4 py-2.5 rounded-2xl bg-[#E8F8F5] border-2 border-[#27AE60] text-[#1E8449]">
+                <Award size={28} className="text-[#27AE60]" />
+                <div className="text-left">
+                  <div className="text-[10px] uppercase font-bold text-[#27AE60]">Evaluation Result</div>
+                  <div className="text-base font-black">
+                    {score >= 5 ? 'Grade A+ · Outstanding' : score >= 3 ? 'Grade B · Competent' : 'Grade C · Completed'}
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div className="inline-block p-3 rounded-2xl bg-[#FFFBF5] border-2 border-[#4A4A5E]/20 text-xs font-bold text-[#4A4A5E]">

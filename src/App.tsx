@@ -4,7 +4,18 @@
  */
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { AvatarType, DialogueChoice, DialogueNode, GameState, InspectData, MajorType, NPCData, PlayerState, ZoneId } from './types/game';
+import {
+  AvatarType,
+  DialogueChoice,
+  DialogueNode,
+  GameState,
+  InspectData,
+  MajorType,
+  NPCData,
+  PlayerState,
+  ZoneId,
+  AnsweredNPCRecord
+} from './types/game';
 import { DIALOGUE_NODES } from './data/story';
 import { GameCanvas } from './components/GameCanvas';
 import { HUD } from './components/HUD';
@@ -20,9 +31,15 @@ import { InspectModal } from './components/InspectModal';
 import { DebateLedger } from './components/Minigames/DebateLedger';
 import { EngineTalk } from './components/Minigames/EngineTalk';
 import { NetworkConnect } from './components/Minigames/NetworkConnect';
+import { DailyMissionModal } from './components/DailyMissionModal';
+import { ReviewedDialogueModal } from './components/ReviewedDialogueModal';
+import { RoomRestrictionModal } from './components/RoomRestrictionModal';
+import { QuizLockedModal } from './components/QuizLockedModal';
 import { sound } from './utils/audio';
+import { getDailyMission, loadDailyMissionState, completeDailyMission, DailyMissionState, getTodayDateString } from './utils/dailyMission';
+import { getRequiredCluesForDay, isRoomAllowedForMajor, getMajorRoom, checkDayCompletion, AccessibleWitness } from './utils/gameRules';
 
-const STORAGE_KEY = 'opinion_quest_muhiba_save_v2';
+const STORAGE_KEY = 'opinion_quest_muhiba_save_v3';
 
 const INITIAL_GAME_STATE: GameState = {
   currentChapter: 1,
@@ -46,6 +63,7 @@ const INITIAL_GAME_STATE: GameState = {
     3: 0
   },
   talkedNpcs: [],
+  answeredNpcs: {},
   gameCompleted: false
 };
 
@@ -55,7 +73,7 @@ const INITIAL_PLAYER_STATE: PlayerState = {
   avatar: 'girl_hijab',
   major: 'AKL',
   x: 520,
-  y: 420,
+  y: 460, // Clear open plaza south of pedestal base (y: 340-410)
   zone: 'courtyard',
   direction: 'up',
   isMoving: false
@@ -73,7 +91,16 @@ export default function App() {
   const [player, setPlayer] = useState<PlayerState>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) return JSON.parse(saved).player;
+      if (saved) {
+        const parsed = JSON.parse(saved).player;
+        if (parsed) {
+          // If player was saved at old stuck position near pedestal, reposition safely
+          if (parsed.zone === 'courtyard' && parsed.y > 330 && parsed.y < 445 && parsed.x > 480 && parsed.x < 620) {
+            parsed.y = 460;
+          }
+          return parsed;
+        }
+      }
     } catch {}
     return INITIAL_PLAYER_STATE;
   });
@@ -82,8 +109,34 @@ export default function App() {
     return !!localStorage.getItem(STORAGE_KEY);
   });
 
+  // Daily Mission State & Streak
+  const [dailyMissionState, setDailyMissionState] = useState<DailyMissionState>(loadDailyMissionState);
+  const [showDailyMission, setShowDailyMission] = useState<boolean>(false);
+  const dailyMission = getDailyMission();
+
   // Modal States
   const [activeDialogueNode, setActiveDialogueNode] = useState<DialogueNode | null>(null);
+  const currentTalkingNpcRef = useRef<NPCData | null>(null);
+  const [reviewedDialogueRecord, setReviewedDialogueRecord] = useState<AnsweredNPCRecord | null>(null);
+
+  const [roomRestrictionAlert, setRoomRestrictionAlert] = useState<{
+    studentMajor: MajorType;
+    attemptedLab: string;
+    assignedLab: string;
+  } | null>(null);
+
+  const [quizLockedAlert, setQuizLockedAlert] = useState<{
+    day: number;
+    currentClues: number;
+    requiredClues: number;
+    answeredCount: number;
+    totalConversations: number;
+    remainingWitnesses: AccessibleWitness[];
+  } | null>(null);
+
+  const [autoQuizTriggeredForChapter, setAutoQuizTriggeredForChapter] = useState<number | null>(null);
+  const [showAutoQuizBanner, setShowAutoQuizBanner] = useState<boolean>(false);
+
   const [activeMinigame, setActiveMinigame] = useState<'akl' | 'otomotif' | 'tjkt' | null>(null);
   const [showPhraseBank, setShowPhraseBank] = useState<boolean>(false);
   const [showInventory, setShowInventory] = useState<boolean>(false);
@@ -100,6 +153,10 @@ export default function App() {
   // Determine if any modal is currently active to prevent navigation collision
   const isAnyModalActive =
     !!activeDialogueNode ||
+    !!reviewedDialogueRecord ||
+    !!roomRestrictionAlert ||
+    !!quizLockedAlert ||
+    showDailyMission ||
     !!activeMinigame ||
     showPhraseBank ||
     showInventory ||
@@ -150,33 +207,32 @@ export default function App() {
     setHasStarted(true);
 
     setTimeout(() => {
-      let majorIntroMsg = `Welcome, ${name} (${studentClass})! As an AKL (Accounting & Finance) investigator, Principal Pak Haryono requests your analytical skills to examine the 25th Anniversary Golden Trophy registry.`;
+      let majorIntroMsg = `Welcome, ${name} (${studentClass})! As an AKL (Accounting & Finance) investigator, Principal Pak Haryono requests your analytical skills to examine the 25th Anniversary Golden Trophy registry in the AKL Lab.`;
 
       if (major === 'Otomotif') {
-        majorIntroMsg = `Welcome, ${name} (${studentClass})! As an Otomotif investigator, Principal Pak Haryono requests your mechanical eye to examine the trophy pedestal mounts and workshop clues.`;
+        majorIntroMsg = `Welcome, ${name} (${studentClass})! As an Otomotif investigator, Principal Pak Haryono requests your mechanical eye to examine the trophy pedestal mounts and workshop clues in the Otomotif Workshop.`;
       } else if (major === 'TJKT') {
-        majorIntroMsg = `Welcome, ${name} (${studentClass})! As a TJKT (Computer Network) investigator, Principal Pak Haryono needs your technical expertise to check CCTV server timestamp logs.`;
+        majorIntroMsg = `Welcome, ${name} (${studentClass})! As a TJKT (Computer Network) investigator, Principal Pak Haryono needs your technical expertise to check CCTV server timestamp logs in the TJKT Lab.`;
       }
 
       setInspectData({
-        title: 'Mission Briefing',
+        title: 'Investigation Orientation',
         message: majorIntroMsg,
-        clueUnlocked: false,
         choices: [
           {
-            text: 'I think we can solve this mystery together with polite dialogue and clear evidence.',
+            text: 'I understand, and I agree to proceed respectfully with this investigation.',
             isCorrect: true,
-            feedback: 'Excellent! "I think..." opens your constructive viewpoint with confidence.',
+            feedback: 'Polite and professional! "I agree to proceed..." confirms your commitment to constructive inquiry.',
             trustChange: 15
           },
           {
-            text: 'In my opinion, we should first inspect the courtyard pedestal and interview witnesses.',
+            text: 'In my opinion, we should first interview witnesses around the courtyard before entering our lab.',
             isCorrect: true,
-            feedback: 'Very proactive! "In my opinion..." proposes an orderly plan of action.',
+            feedback: 'Sound investigative initiative! "In my opinion..." introduces your strategic recommendation.',
             trustChange: 15
           },
           {
-            text: 'From my point of view, checking the school labs will reveal the truth.',
+            text: 'From my point of view, our assigned department room will hold the most critical evidence.',
             isCorrect: true,
             feedback: 'Analytical! "From my point of view..." directs attention to the departments.',
             trustChange: 15
@@ -187,10 +243,21 @@ export default function App() {
   };
 
   // Talk to NPC handler
+  // Rule: once an NPC has been talked to in current chapter, display previously answered text
   const handleTalkToNPC = useCallback((npc: NPCData) => {
     sound.playClick();
-    let nodeId = npc.initialDialogueNodeId;
 
+    const recordKey = `${npc.id}_ch${gameState.currentChapter}`;
+    const existingRecord = gameState.answeredNpcs?.[recordKey];
+
+    if (existingRecord) {
+      setReviewedDialogueRecord(existingRecord);
+      return;
+    }
+
+    currentTalkingNpcRef.current = npc;
+
+    let nodeId = npc.initialDialogueNodeId;
     if (npc.chapterDialogueNodes && npc.chapterDialogueNodes[gameState.currentChapter]) {
       nodeId = npc.chapterDialogueNodes[gameState.currentChapter];
     }
@@ -199,7 +266,7 @@ export default function App() {
     if (node) {
       setActiveDialogueNode(node);
     }
-  }, [gameState.currentChapter]);
+  }, [gameState.currentChapter, gameState.answeredNpcs]);
 
   // Choice selected in DialogueModal
   const handleChoiceSelected = (choice: DialogueChoice) => {
@@ -212,27 +279,90 @@ export default function App() {
       sound.playSparkle();
     }
 
+    const currentNpc = currentTalkingNpcRef.current;
+    let newAnswered = { ...(gameState.answeredNpcs || {}) };
+
+    if (currentNpc && activeDialogueNode) {
+      const recordKey = `${currentNpc.id}_ch${gameState.currentChapter}`;
+      newAnswered[recordKey] = {
+        npcId: currentNpc.id,
+        speaker: activeDialogueNode.speaker,
+        speakerRole: activeDialogueNode.speakerRole,
+        avatarType: activeDialogueNode.avatarType,
+        questionText: activeDialogueNode.text,
+        chosenAnswer: choice.text,
+        feedback: choice.feedback,
+        isCorrect: choice.isCorrect,
+        trustChange: choice.trustChange,
+        chapter: gameState.currentChapter
+      };
+    }
+
     setGameState(prev => ({
       ...prev,
       trustMeter: newTrust,
       score: prev.score + scoreAdd,
-      collectedClues: newClues
+      collectedClues: newClues,
+      talkedNpcs: currentNpc ? Array.from(new Set([...prev.talkedNpcs, currentNpc.id])) : prev.talkedNpcs,
+      answeredNpcs: newAnswered
     }));
 
     if (choice.nextNodeId && DIALOGUE_NODES[choice.nextNodeId]) {
       setActiveDialogueNode(DIALOGUE_NODES[choice.nextNodeId]);
     } else {
       setActiveDialogueNode(null);
+      currentTalkingNpcRef.current = null;
     }
   };
 
-  // Door transition
+  // Door transition with Major Department Room Restriction
   const handleEnterDoor = (targetZone: ZoneId, targetX: number, targetY: number) => {
+    // If entering a lab room from the Courtyard, enforce that the student enters their assigned major room!
+    if (player.zone === 'courtyard' && targetZone !== 'courtyard') {
+      if (!isRoomAllowedForMajor(targetZone, player.major)) {
+        sound.playWrong();
+        const assigned = getMajorRoom(player.major);
+        const attempted =
+          targetZone === 'akl'
+            ? 'AKL Accounting Lab'
+            : targetZone === 'otomotif'
+            ? 'Otomotif Workshop'
+            : 'TJKT Network Lab';
+
+        // Immediately push player safely backward southwards off the door mat onto the open walkway (y: 145)
+        setPlayer(prev => ({
+          ...prev,
+          y: 145,
+          direction: 'down',
+          isMoving: false
+        }));
+
+        setRoomRestrictionAlert({
+          studentMajor: player.major,
+          attemptedLab: attempted,
+          assignedLab: assigned.name
+        });
+        return;
+      }
+    }
+
     setPlayer(prev => ({
       ...prev,
       zone: targetZone,
       x: targetX,
       y: targetY,
+      isMoving: false
+    }));
+  };
+
+  // Safe dismiss for room restriction modal that ensures player is positioned on the open walkway
+  const handleDismissRoomRestriction = () => {
+    sound.playClick();
+    setRoomRestrictionAlert(null);
+    setPlayer(prev => ({
+      ...prev,
+      y: 145,
+      direction: 'down',
       isMoving: false
     }));
   };
@@ -322,6 +452,68 @@ export default function App() {
     });
   };
 
+  const dayCompletion = checkDayCompletion(gameState, player.major);
+
+  // Auto-launch Quiz when all conversations and required clues for current day are completed
+  useEffect(() => {
+    if (!hasStarted || gameState.gameCompleted) return;
+    const ch = gameState.currentChapter;
+    if (gameState.completedQuizzes[ch]) return;
+
+    if (
+      dayCompletion.isComplete &&
+      !showQuiz &&
+      !showChapterEnd &&
+      !showVictory &&
+      !activeDialogueNode &&
+      !inspectData &&
+      !activeMinigame &&
+      autoQuizTriggeredForChapter !== ch
+    ) {
+      setAutoQuizTriggeredForChapter(ch);
+      sound.playFanfare();
+      setShowAutoQuizBanner(true);
+      const timer = setTimeout(() => {
+        setShowAutoQuizBanner(false);
+        setShowQuiz(true);
+      }, 1200);
+      return () => clearTimeout(timer);
+    }
+  }, [
+    hasStarted,
+    gameState.completedQuizzes,
+    gameState.currentChapter,
+    gameState.gameCompleted,
+    dayCompletion.isComplete,
+    showQuiz,
+    showChapterEnd,
+    showVictory,
+    activeDialogueNode,
+    inspectData,
+    activeMinigame,
+    autoQuizTriggeredForChapter
+  ]);
+
+  // Open Quiz handler with Clue & Interview Gating:
+  // Day 1 requires 2 clues, Day 2 requires 4 clues total, Day 3 requires 7 clues total
+  // AND all accessible witnesses for the day must be interviewed
+  const handleOpenQuizRequested = () => {
+    if (!dayCompletion.isComplete) {
+      sound.playWrong();
+      setQuizLockedAlert({
+        day: gameState.currentChapter,
+        currentClues: dayCompletion.currentClues,
+        requiredClues: dayCompletion.requiredClues,
+        answeredCount: dayCompletion.answeredCount,
+        totalConversations: dayCompletion.totalConversations,
+        remainingWitnesses: dayCompletion.remainingWitnesses
+      });
+      return;
+    }
+    sound.playClick();
+    setShowQuiz(true);
+  };
+
   // Complete Quiz handler
   const handleCompleteQuiz = (ch: 1 | 2 | 3, stars: number, bonus: number) => {
     setShowQuiz(false);
@@ -344,9 +536,11 @@ export default function App() {
     }
   };
 
-  // Advance Chapter
+  // Advance Chapter / Day
   const handleAdvanceChapter = () => {
     setShowChapterEnd(false);
+    setAutoQuizTriggeredForChapter(null);
+    setShowAutoQuizBanner(false);
     const nextCh = (gameState.currentChapter + 1) as 2 | 3;
     setGameState(prev => ({
       ...prev,
@@ -362,6 +556,16 @@ export default function App() {
     }));
 
     sound.playFanfare();
+  };
+
+  // Daily Mission completion handler
+  const handleCompleteDailyMission = () => {
+    const updated = completeDailyMission();
+    setDailyMissionState(updated);
+    setGameState(prev => ({
+      ...prev,
+      score: prev.score + dailyMission.bonusPoints
+    }));
   };
 
   // Restart
@@ -386,19 +590,33 @@ export default function App() {
         <CharacterSelect onStart={handleStartGame} />
       ) : (
         <>
-          {/* Top HUD with Timer and Exit Button */}
+          {/* Top HUD with Timer, Clue Gated Quiz, Daily Mission, and Exit Button */}
           <HUD
             gameState={gameState}
             currentZone={player.zone}
             playerName={player.name}
             studentClass={player.studentClass}
             elapsedSeconds={gameState.elapsedSeconds || 0}
+            dailyStreak={dailyMissionState.currentStreak}
+            isDailyMissionCompleted={dailyMissionState.lastCompletedDate === getTodayDateString()}
+            isQuizUnlocked={dayCompletion.isComplete}
+            answeredConversationsCount={dayCompletion.answeredCount}
+            totalConversationsCount={dayCompletion.totalConversations}
             onExitToCourtyard={handleExitToCourtyard}
             onOpenPhraseBank={() => setShowPhraseBank(true)}
             onOpenInventory={() => setShowInventory(true)}
-            onOpenQuiz={() => setShowQuiz(true)}
+            onOpenQuiz={handleOpenQuizRequested}
+            onOpenDailyMission={() => setShowDailyMission(true)}
             onRestart={handleRestart}
           />
+
+          {/* Celebratory Auto-Launch Banner */}
+          {showAutoQuizBanner && (
+            <div className="fixed top-14 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 border-2 border-white text-white font-black text-xs sm:text-sm shadow-2xl flex items-center gap-2 animate-in slide-in-from-top-4 duration-300">
+              <span className="text-base">🎉</span>
+              <span>All Day {gameState.currentChapter} evidence & interviews completed! Opening Quiz...</span>
+            </div>
+          )}
 
           {/* 60fps Game Canvas */}
           <GameCanvas
@@ -414,9 +632,10 @@ export default function App() {
               interactTriggerRef.current = trigger;
             }}
             setNearbyInteractable={setIsNearbyInteractable}
+            isPaused={isAnyModalActive}
           />
 
-          {/* Mobile-First Virtual Controls (Auto-hidden when any modal is open to avoid collision) */}
+          {/* Mobile-First Virtual Controls (Elevated floating position) */}
           <VirtualControls
             onDirectionChange={dir => setVirtualDirection(dir)}
             onInteract={() => {
@@ -432,13 +651,58 @@ export default function App() {
 
           {/* Modals & Popups */}
 
-          {/* Dialogue Box */}
+          {/* Dialogue Box (New active interview) */}
           {activeDialogueNode && (
             <DialogueModal
               node={activeDialogueNode}
               onChoiceSelected={handleChoiceSelected}
-              onClose={() => setActiveDialogueNode(null)}
+              onClose={() => {
+                setActiveDialogueNode(null);
+                currentTalkingNpcRef.current = null;
+              }}
               trustMeter={gameState.trustMeter}
+            />
+          )}
+
+          {/* Reviewed Dialogue Modal (When speaking again to an already-interviewed NPC) */}
+          {reviewedDialogueRecord && (
+            <ReviewedDialogueModal
+              record={reviewedDialogueRecord}
+              onClose={() => setReviewedDialogueRecord(null)}
+            />
+          )}
+
+          {/* Daily English Opinion Mission Modal */}
+          {showDailyMission && (
+            <DailyMissionModal
+              mission={dailyMission}
+              missionState={dailyMissionState}
+              onComplete={handleCompleteDailyMission}
+              onClose={() => setShowDailyMission(false)}
+            />
+          )}
+
+          {/* Room Restriction Modal */}
+          {roomRestrictionAlert && (
+            <RoomRestrictionModal
+              studentMajor={roomRestrictionAlert.studentMajor}
+              attemptedLab={roomRestrictionAlert.attemptedLab}
+              assignedLab={roomRestrictionAlert.assignedLab}
+              onClose={handleDismissRoomRestriction}
+            />
+          )}
+
+          {/* Quiz Locked Modal */}
+          {quizLockedAlert && (
+            <QuizLockedModal
+              day={quizLockedAlert.day}
+              currentClues={quizLockedAlert.currentClues}
+              requiredClues={quizLockedAlert.requiredClues}
+              answeredCount={quizLockedAlert.answeredCount}
+              totalConversations={quizLockedAlert.totalConversations}
+              remainingWitnesses={quizLockedAlert.remainingWitnesses}
+              onClose={() => setQuizLockedAlert(null)}
+              onOpenInventory={() => setShowInventory(true)}
             />
           )}
 

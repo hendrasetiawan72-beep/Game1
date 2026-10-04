@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { DialogueChoice, DialogueNode } from '../types/game';
 import { sound } from '../utils/audio';
-import { Volume2, Sparkles, AlertCircle, CheckCircle2, ArrowRight } from 'lucide-react';
+import { Volume2, Key, AlertCircle, CheckCircle2, ArrowRight } from 'lucide-react';
 
 interface DialogueModalProps {
   node: DialogueNode;
@@ -136,7 +136,7 @@ export const DialogueModal: React.FC<DialogueModalProps> = ({
 
               {selectedChoice.unlockClueId && (
                 <div className="mt-2 p-1.5 rounded-xl bg-white/90 border border-green-300 flex items-center gap-1.5 text-xs font-black text-green-800">
-                  <Sparkles size={13} className="text-amber-500 shrink-0" />
+                  <Key size={13} className="text-amber-500 shrink-0" />
                   <span>New Clue Card Added to Inventory!</span>
                 </div>
               )}
