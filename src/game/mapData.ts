@@ -1,0 +1,355 @@
+import { ZoneId } from '../types/game';
+
+export interface Rect {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+export interface DoorTrigger {
+  id: string;
+  name: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  targetZone: ZoneId;
+  targetX: number;
+  targetY: number;
+}
+
+export interface MapObject {
+  id: string;
+  type: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  label?: string;
+  interactive?: boolean;
+  inspectMessage?: string;
+  unlockClueId?: string;
+}
+
+export interface ZoneMapData {
+  id: ZoneId;
+  name: string;
+  subtitle: string;
+  width: number;
+  height: number;
+  backgroundColor: string;
+  floorColor: string;
+  wallColor: string;
+  accentColor: string;
+  obstacles: Rect[];
+  doors: DoorTrigger[];
+  objects: MapObject[];
+}
+
+export const MAP_ZONES: Record<ZoneId, ZoneMapData> = {
+  courtyard: {
+    id: 'courtyard',
+    name: 'Courtyard & Plaza',
+    subtitle: 'SMK Muhammadiyah Bawang - Central Hub',
+    width: 1100,
+    height: 750,
+    backgroundColor: '#E8F5E9',
+    floorColor: '#FFFBF5',
+    wallColor: '#C8E6C9',
+    accentColor: '#81C784',
+    obstacles: [
+      // Top wall split to allow door entries at x: 250-360, 495-605, 740-850
+      { x: 0, y: 0, w: 250, h: 50 },
+      { x: 360, y: 0, w: 135, h: 50 },
+      { x: 605, y: 0, w: 135, h: 50 },
+      { x: 850, y: 0, w: 250, h: 50 },
+
+      // Bottom wall
+      { x: 0, y: 700, w: 1100, h: 50 },
+
+      // Left and right perimeter walls
+      { x: 0, y: 0, w: 40, h: 750 },
+      { x: 1060, y: 0, w: 40, h: 750 },
+
+      // Buildings & furniture
+      { x: 80, y: 480, w: 140, h: 120 }, // Security post
+      { x: 780, y: 460, w: 240, h: 160 }, // Canteen
+      { x: 80, y: 80, w: 180, h: 140 }, // Musholla
+      { x: 500, y: 340, w: 100, h: 70 }, // Pedestal base
+
+      // Flower beds / planters
+      { x: 340, y: 180, w: 90, h: 60 },
+      { x: 670, y: 180, w: 90, h: 60 },
+      { x: 360, y: 520, w: 100, h: 50 },
+      { x: 640, y: 520, w: 100, h: 50 }
+    ],
+    doors: [
+      {
+        id: 'door_to_akl',
+        name: 'AKL Accounting Lab',
+        x: 250,
+        y: 30,
+        w: 110,
+        h: 60,
+        targetZone: 'akl',
+        targetX: 450,
+        targetY: 520
+      },
+      {
+        id: 'door_to_otomotif',
+        name: 'Otomotif Workshop',
+        x: 495,
+        y: 30,
+        w: 110,
+        h: 60,
+        targetZone: 'otomotif',
+        targetX: 450,
+        targetY: 520
+      },
+      {
+        id: 'door_to_tjkt',
+        name: 'TJKT Network Lab',
+        x: 740,
+        y: 30,
+        w: 110,
+        h: 60,
+        targetZone: 'tjkt',
+        targetX: 450,
+        targetY: 520
+      }
+    ],
+    objects: [
+      {
+        id: 'trophy_pedestal',
+        type: 'pedestal',
+        x: 510,
+        y: 330,
+        w: 80,
+        h: 80,
+        label: 'Trophy Pedestal',
+        interactive: true,
+        inspectMessage: 'The glass case is lifted! Soft velvet polishing fibers are caught on the golden corner.',
+        unlockClueId: 'clue_pedestal'
+      },
+      {
+        id: 'school_gate_sign',
+        type: 'gate_sign',
+        x: 420,
+        y: 690,
+        w: 260,
+        h: 30,
+        label: 'Main Gate: SMK Muhammadiyah Bawang',
+        interactive: true,
+        inspectMessage: 'A grand celebratory banner hangs above: "25th Silver Jubilee Anniversary - Islamic Vocational Excellence".'
+      },
+      {
+        id: 'musholla_corner',
+        type: 'musholla',
+        x: 90,
+        y: 70,
+        w: 160,
+        h: 120,
+        label: 'Musholla Al-Ikhlas',
+        interactive: true,
+        inspectMessage: 'The school prayer room is serene, clean, and neatly arranged with soft green carpets.'
+      },
+      {
+        id: 'canteen_table',
+        type: 'canteen_table',
+        x: 820,
+        y: 480,
+        w: 120,
+        h: 60,
+        label: 'Canteen Counter',
+        interactive: true,
+        inspectMessage: 'Ibu Siti has fresh snacks and hot sweet tea ready for students and teachers.'
+      }
+    ]
+  },
+
+  akl: {
+    id: 'akl',
+    name: 'AKL Accounting Lab',
+    subtitle: 'Accounting & Institutional Finance',
+    width: 900,
+    height: 650,
+    backgroundColor: '#FFF9E6',
+    floorColor: '#FFF1B8',
+    wallColor: '#FFD9C7',
+    accentColor: '#F5B041',
+    obstacles: [
+      { x: 0, y: 0, w: 900, h: 50 },
+      // Bottom wall split with opening between x: 380 and 520 for easy doorway exit
+      { x: 0, y: 600, w: 380, h: 50 },
+      { x: 520, y: 600, w: 380, h: 50 },
+
+      { x: 0, y: 0, w: 40, h: 650 },
+      { x: 860, y: 0, w: 40, h: 650 },
+      { x: 120, y: 160, w: 260, h: 70 },
+      { x: 500, y: 160, w: 260, h: 70 },
+      { x: 80, y: 350, w: 100, h: 180 },
+      { x: 300, y: 220, w: 120, h: 60 }
+    ],
+    doors: [
+      {
+        id: 'door_akl_to_courtyard',
+        name: 'Exit to Courtyard',
+        x: 380,
+        y: 560,
+        w: 140,
+        h: 60,
+        targetZone: 'courtyard',
+        targetX: 305,
+        targetY: 120
+      }
+    ],
+    objects: [
+      {
+        id: 'debate_ledger_terminal',
+        type: 'minigame_station',
+        x: 600,
+        y: 340,
+        w: 100,
+        h: 80,
+        label: 'Debate Ledger Station',
+        interactive: true,
+        inspectMessage: 'Interactive financial ledger terminal: balance opinion statements with appropriate responses!'
+      },
+      {
+        id: 'asset_cabinet',
+        type: 'archive_shelf',
+        x: 90,
+        y: 360,
+        w: 80,
+        h: 140,
+        label: 'Asset Archive Shelves',
+        interactive: true,
+        inspectMessage: 'Ledger folder 1999-2024: "Golden Jubilee Trophy: Insured and registered under school heritage assets."'
+      }
+    ]
+  },
+
+  otomotif: {
+    id: 'otomotif',
+    name: 'Otomotif Workshop',
+    subtitle: 'Automotive Engineering & Motorcycle Repair',
+    width: 900,
+    height: 650,
+    backgroundColor: '#EDF5FC',
+    floorColor: '#BFDDF5',
+    wallColor: '#DCCFF0',
+    accentColor: '#5DADE2',
+    obstacles: [
+      { x: 0, y: 0, w: 900, h: 50 },
+      // Bottom wall split with opening between x: 380 and 520 for easy doorway exit
+      { x: 0, y: 600, w: 380, h: 50 },
+      { x: 520, y: 600, w: 380, h: 50 },
+
+      { x: 0, y: 0, w: 40, h: 650 },
+      { x: 860, y: 0, w: 40, h: 650 },
+      { x: 120, y: 150, w: 240, h: 130 },
+      { x: 480, y: 150, w: 180, h: 100 },
+      { x: 740, y: 120, w: 100, h: 220 },
+      { x: 80, y: 380, w: 120, h: 160 }
+    ],
+    doors: [
+      {
+        id: 'door_otomotif_to_courtyard',
+        name: 'Exit to Courtyard',
+        x: 380,
+        y: 560,
+        w: 140,
+        h: 60,
+        targetZone: 'courtyard',
+        targetX: 550,
+        targetY: 120
+      }
+    ],
+    objects: [
+      {
+        id: 'engine_talk_station',
+        type: 'minigame_station',
+        x: 620,
+        y: 350,
+        w: 110,
+        h: 80,
+        label: 'Engine Talk Tuning Bench',
+        interactive: true,
+        inspectMessage: 'Electronic dyno-tester: arrange English opinion sentence blocks to calibrate the motorcycle engine!'
+      },
+      {
+        id: 'tool_bench',
+        type: 'workbench',
+        x: 750,
+        y: 180,
+        w: 80,
+        h: 120,
+        label: 'Master Tool Bench',
+        interactive: true,
+        inspectMessage: 'Polishing cloths, brass buffing compound, and engraving chisels are neatly lined up.'
+      }
+    ]
+  },
+
+  tjkt: {
+    id: 'tjkt',
+    name: 'TJKT Network Lab',
+    subtitle: 'Computer Network & Telecommunication',
+    width: 900,
+    height: 650,
+    backgroundColor: '#EDFAF5',
+    floorColor: '#BFE8D6',
+    wallColor: '#F8CFDA',
+    accentColor: '#48C9B0',
+    obstacles: [
+      { x: 0, y: 0, w: 900, h: 50 },
+      // Bottom wall split with opening between x: 380 and 520 for easy doorway exit
+      { x: 0, y: 600, w: 380, h: 50 },
+      { x: 520, y: 600, w: 380, h: 50 },
+
+      { x: 0, y: 0, w: 40, h: 650 },
+      { x: 860, y: 0, w: 40, h: 650 },
+      { x: 140, y: 140, w: 220, h: 110 },
+      { x: 480, y: 140, w: 280, h: 100 },
+      { x: 80, y: 360, w: 130, h: 180 }
+    ],
+    doors: [
+      {
+        id: 'door_tjkt_to_courtyard',
+        name: 'Exit to Courtyard',
+        x: 380,
+        y: 560,
+        w: 140,
+        h: 60,
+        targetZone: 'courtyard',
+        targetX: 795,
+        targetY: 120
+      }
+    ],
+    objects: [
+      {
+        id: 'network_connect_station',
+        type: 'minigame_station',
+        x: 600,
+        y: 330,
+        w: 110,
+        h: 80,
+        label: 'Network Patch Panel Station',
+        interactive: true,
+        inspectMessage: 'Patch panel terminal: link conversational opinion statements to polite reactions!'
+      },
+      {
+        id: 'server_monitors',
+        type: 'server_terminal',
+        x: 170,
+        y: 150,
+        w: 120,
+        h: 80,
+        label: 'CCTV Security Server',
+        interactive: true,
+        inspectMessage: 'All camera nodes are online. The 5:00 PM record shows routine scheduled maintenance.'
+      }
+    ]
+  }
+};

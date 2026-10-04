@@ -1,0 +1,6 @@
+{
+  "name": "Opinion Quest: The Muhiba Mystery",
+  "description": "A 2D top-down English learning adventure at SMK Muhammadiyah Bawang (Muhiba). Master expressing opinions, agreeing, and polite disagreement to solve the mystery of the missing Golden Trophy!",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
