@@ -12,9 +12,9 @@ interface GameCanvasProps {
   onTalkToNPC: (npc: NPCData) => void;
   onEnterDoor: (targetZone: ZoneId, targetX: number, targetY: number) => void;
   onTriggerMinigame: (type: 'akl' | 'otomotif' | 'tjkt') => void;
-  onInspectObject: (msg: string, clueId?: string) => void;
+  onInspectObject: (msg: string, clueId?: string, label?: string) => void;
   virtualDirection: { x: number; y: number } | null;
-  onInteractRequested: () => void;
+  onRegisterInteractTrigger?: (triggerFn: () => void) => void;
   setNearbyInteractable: (has: boolean) => void;
 }
 
@@ -27,6 +27,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   onTriggerMinigame,
   onInspectObject,
   virtualDirection,
+  onRegisterInteractTrigger,
   setNearbyInteractable
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -78,26 +79,26 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     return false;
   }, [activeNPCs]);
 
-  // Find nearest interactable target (NPC, Door, or Object)
+  // Find nearest interactable target (NPC, Door, or Object) with generous hit radius
   const getNearestInteractable = useCallback(() => {
     const p = playerRef.current;
     const curZone = MAP_ZONES[p.zone];
 
-    // 1. Check NPCs
+    // 1. Check NPCs with generous talk radius
     for (const npc of activeNPCs) {
       const dist = Math.hypot(npc.x - p.x, npc.y - p.y);
-      if (dist < 70) {
+      if (dist < 95) {
         return { type: 'npc' as const, data: npc };
       }
     }
 
-    // 2. Check Doors
+    // 2. Check Doors (Generous radius of 150px so player easily triggers door exit)
     if (curZone) {
       for (const door of curZone.doors) {
         const doorCenterX = door.x + door.w / 2;
         const doorCenterY = door.y + door.h / 2;
         const dist = Math.hypot(doorCenterX - p.x, doorCenterY - p.y);
-        if (dist < 80) {
+        if (dist < 150) {
           return { type: 'door' as const, data: door };
         }
       }
@@ -109,10 +110,15 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         const objCenterX = obj.x + obj.w / 2;
         const objCenterY = obj.y + obj.h / 2;
         const dist = Math.hypot(objCenterX - p.x, objCenterY - p.y);
-        if (dist < 75) {
+        if (dist < 85) {
           return { type: 'object' as const, data: obj };
         }
       }
+    }
+
+    // 4. If inside a lab and in bottom doorway zone, return exit door
+    if (p.zone !== 'courtyard' && p.y >= 470 && curZone && curZone.doors.length > 0) {
+      return { type: 'door' as const, data: curZone.doors[0] };
     }
 
     return null;
@@ -121,7 +127,20 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   // Trigger interaction (E, Space, or Action button)
   const triggerInteract = useCallback(() => {
     const target = getNearestInteractable();
-    if (!target) return;
+    if (!target) {
+      // If player is inside a lab and presses action button near bottom, trigger exit to Courtyard
+      const p = playerRef.current;
+      if (p.zone !== 'courtyard' && p.y >= 450) {
+        const curZone = MAP_ZONES[p.zone];
+        if (curZone && curZone.doors.length > 0) {
+          const door = curZone.doors[0];
+          sound.playSparkle();
+          clickTarget.current = null;
+          onEnterDoor(door.targetZone, door.targetX, door.targetY);
+        }
+      }
+      return;
+    }
 
     if (target.type === 'npc') {
       sound.playClick();
@@ -139,10 +158,17 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         else if (playerRef.current.zone === 'tjkt') onTriggerMinigame('tjkt');
       } else if (obj.inspectMessage) {
         sound.playClick();
-        onInspectObject(obj.inspectMessage, obj.unlockClueId);
+        onInspectObject(obj.inspectMessage, obj.unlockClueId, obj.label);
       }
     }
   }, [getNearestInteractable, onTalkToNPC, onEnterDoor, onTriggerMinigame, onInspectObject]);
+
+  // Register direct interact trigger callback for VirtualControls
+  useEffect(() => {
+    if (onRegisterInteractTrigger) {
+      onRegisterInteractTrigger(triggerInteract);
+    }
+  }, [onRegisterInteractTrigger, triggerInteract]);
 
   // Keyboard events
   useEffect(() => {
@@ -246,15 +272,25 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       if (curZone) {
         for (const door of curZone.doors) {
           if (
-            curP.x >= door.x - 10 &&
-            curP.x <= door.x + door.w + 10 &&
-            curP.y >= door.y - 10 &&
-            curP.y <= door.y + door.h + 10
+            curP.x >= door.x - 20 &&
+            curP.x <= door.x + door.w + 20 &&
+            curP.y >= door.y - 20 &&
+            curP.y <= door.y + door.h + 20
           ) {
             sound.playSparkle();
             clickTarget.current = null;
             onEnterDoor(door.targetZone, door.targetX, door.targetY);
             break;
+          }
+        }
+
+        // Additional fail-safe: stepping near the bottom doorway inside any lab transitions to Courtyard
+        if (curP.zone !== 'courtyard' && curP.y >= 540 && curP.x >= 320 && curP.x <= 580) {
+          const exitDoor = curZone.doors[0];
+          if (exitDoor) {
+            sound.playSparkle();
+            clickTarget.current = null;
+            onEnterDoor(exitDoor.targetZone, exitDoor.targetX, exitDoor.targetY);
           }
         }
       }
@@ -312,13 +348,13 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       // Door nearby prompt
       curZone.doors.forEach(door => {
         const distToDoor = Math.hypot(door.x + door.w / 2 - p.x, door.y + door.h / 2 - p.y);
-        if (distToDoor < 85) {
-          const promptY = door.y > 100 ? door.y - 32 : door.y + door.h + 24;
-          ProceduralRenderer.roundRect(ctx, door.x + door.w / 2 - 45, promptY, 90, 20, 10, '#BFE8D6', '#4A4A5E', 1.5);
-          ctx.fillStyle = '#4A4A5E';
-          ctx.font = 'bold 9px Poppins, sans-serif';
+        if (distToDoor < 130) {
+          const promptY = door.y > 100 ? door.y - 36 : door.y + door.h + 24;
+          ProceduralRenderer.roundRect(ctx, door.x + door.w / 2 - 60, promptY, 120, 24, 12, '#BFE8D6', '#4A4A5E', 2);
+          ctx.fillStyle = '#1E8449';
+          ctx.font = 'bold 10px Poppins, sans-serif';
           ctx.textAlign = 'center';
-          ctx.fillText('🚪 ENTER (E)', door.x + door.w / 2, promptY + 13);
+          ctx.fillText('🚪 EXIT / ENTER (E)', door.x + door.w / 2, promptY + 16);
         }
       });
 
@@ -347,7 +383,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   ]);
 
   // Handle canvas click/tap to walk or interact
-  const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  const handlePointerDown = (clientX: number, clientY: number) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
@@ -360,19 +396,19 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     camX = Math.max(0, Math.min(camX, curZone.width - rect.width));
     camY = Math.max(0, Math.min(camY, curZone.height - rect.height));
 
-    const clickX = e.clientX - rect.left + camX;
-    const clickY = e.clientY - rect.top + camY;
+    const clickX = clientX - rect.left + camX;
+    const clickY = clientY - rect.top + camY;
 
-    // 1. If clicked near a door, enter immediately if already close, or walk directly there
+    // 1. If clicked near a door or bottom exit doorway in a lab, enter immediately if within range
     for (const door of curZone.doors) {
       if (
-        clickX >= door.x - 20 &&
-        clickX <= door.x + door.w + 20 &&
-        clickY >= door.y - 20 &&
-        clickY <= door.y + door.h + 20
+        clickX >= door.x - 40 &&
+        clickX <= door.x + door.w + 40 &&
+        clickY >= door.y - 40 &&
+        clickY <= door.y + door.h + 40
       ) {
         const dist = Math.hypot(door.x + door.w / 2 - p.x, door.y + door.h / 2 - p.y);
-        if (dist < 85) {
+        if (dist < 180 || (p.zone !== 'courtyard' && p.y >= 450)) {
           sound.playSparkle();
           clickTarget.current = null;
           onEnterDoor(door.targetZone, door.targetX, door.targetY);
@@ -383,12 +419,23 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       }
     }
 
+    // Direct lab exit click: clicking bottom area of lab
+    if (p.zone !== 'courtyard' && clickY >= 520 && clickX >= 300 && clickX <= 600) {
+      const exitDoor = curZone.doors[0];
+      if (exitDoor) {
+        sound.playSparkle();
+        clickTarget.current = null;
+        onEnterDoor(exitDoor.targetZone, exitDoor.targetX, exitDoor.targetY);
+        return;
+      }
+    }
+
     // 2. If clicked near an NPC, talk if close or walk to them
     for (const npc of activeNPCs) {
       const dist = Math.hypot(npc.x - clickX, npc.y - clickY);
-      if (dist < 40) {
+      if (dist < 55) {
         const distToPlayer = Math.hypot(npc.x - p.x, npc.y - p.y);
-        if (distToPlayer < 75) {
+        if (distToPlayer < 95) {
           sound.playClick();
           onTalkToNPC(npc);
           return;
@@ -406,8 +453,13 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     <div className="w-full h-full relative overflow-hidden bg-[#FFFBF5]">
       <canvas
         ref={canvasRef}
-        onClick={handleCanvasClick}
-        className="w-full h-full block cursor-crosshair touch-none"
+        onClick={(e) => handlePointerDown(e.clientX, e.clientY)}
+        onTouchStart={(e) => {
+          if (e.touches.length > 0) {
+            handlePointerDown(e.touches[0].clientX, e.touches[0].clientY);
+          }
+        }}
+        className="w-full h-full block cursor-crosshair touch-none select-none"
       />
     </div>
   );

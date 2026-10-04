@@ -89,34 +89,34 @@ export const MAP_ZONES: Record<ZoneId, ZoneMapData> = {
         id: 'door_to_akl',
         name: 'AKL Accounting Lab',
         x: 250,
-        y: 30,
+        y: 20,
         w: 110,
-        h: 60,
+        h: 70,
         targetZone: 'akl',
         targetX: 450,
-        targetY: 520
+        targetY: 480
       },
       {
         id: 'door_to_otomotif',
         name: 'Otomotif Workshop',
         x: 495,
-        y: 30,
+        y: 20,
         w: 110,
-        h: 60,
+        h: 70,
         targetZone: 'otomotif',
         targetX: 450,
-        targetY: 520
+        targetY: 480
       },
       {
         id: 'door_to_tjkt',
         name: 'TJKT Network Lab',
         x: 740,
-        y: 30,
+        y: 20,
         w: 110,
-        h: 60,
+        h: 70,
         targetZone: 'tjkt',
         targetX: 450,
-        targetY: 520
+        targetY: 480
       }
     ],
     objects: [
@@ -135,10 +135,10 @@ export const MAP_ZONES: Record<ZoneId, ZoneMapData> = {
       {
         id: 'school_gate_sign',
         type: 'gate_sign',
-        x: 420,
-        y: 690,
-        w: 260,
-        h: 30,
+        x: 360,
+        y: 686,
+        w: 380,
+        h: 46,
         label: 'Main Gate: SMK Muhammadiyah Bawang',
         interactive: true,
         inspectMessage: 'A grand celebratory banner hangs above: "25th Silver Jubilee Anniversary - Islamic Vocational Excellence".'
@@ -180,9 +180,9 @@ export const MAP_ZONES: Record<ZoneId, ZoneMapData> = {
     accentColor: '#F5B041',
     obstacles: [
       { x: 0, y: 0, w: 900, h: 50 },
-      // Bottom wall split with opening between x: 380 and 520 for easy doorway exit
-      { x: 0, y: 600, w: 380, h: 50 },
-      { x: 520, y: 600, w: 380, h: 50 },
+      // Bottom wall split with wide opening between x: 320 and 580 for effortless doorway exit
+      { x: 0, y: 600, w: 320, h: 50 },
+      { x: 580, y: 600, w: 320, h: 50 },
 
       { x: 0, y: 0, w: 40, h: 650 },
       { x: 860, y: 0, w: 40, h: 650 },
@@ -195,13 +195,13 @@ export const MAP_ZONES: Record<ZoneId, ZoneMapData> = {
       {
         id: 'door_akl_to_courtyard',
         name: 'Exit to Courtyard',
-        x: 380,
-        y: 560,
-        w: 140,
-        h: 60,
+        x: 330,
+        y: 520,
+        w: 240,
+        h: 90,
         targetZone: 'courtyard',
         targetX: 305,
-        targetY: 120
+        targetY: 130
       }
     ],
     objects: [
@@ -242,9 +242,9 @@ export const MAP_ZONES: Record<ZoneId, ZoneMapData> = {
     accentColor: '#5DADE2',
     obstacles: [
       { x: 0, y: 0, w: 900, h: 50 },
-      // Bottom wall split with opening between x: 380 and 520 for easy doorway exit
-      { x: 0, y: 600, w: 380, h: 50 },
-      { x: 520, y: 600, w: 380, h: 50 },
+      // Bottom wall split with wide opening between x: 320 and 580 for effortless doorway exit
+      { x: 0, y: 600, w: 320, h: 50 },
+      { x: 580, y: 600, w: 320, h: 50 },
 
       { x: 0, y: 0, w: 40, h: 650 },
       { x: 860, y: 0, w: 40, h: 650 },
@@ -257,13 +257,13 @@ export const MAP_ZONES: Record<ZoneId, ZoneMapData> = {
       {
         id: 'door_otomotif_to_courtyard',
         name: 'Exit to Courtyard',
-        x: 380,
-        y: 560,
-        w: 140,
-        h: 60,
+        x: 330,
+        y: 520,
+        w: 240,
+        h: 90,
         targetZone: 'courtyard',
         targetX: 550,
-        targetY: 120
+        targetY: 130
       }
     ],
     objects: [
@@ -304,9 +304,9 @@ export const MAP_ZONES: Record<ZoneId, ZoneMapData> = {
     accentColor: '#48C9B0',
     obstacles: [
       { x: 0, y: 0, w: 900, h: 50 },
-      // Bottom wall split with opening between x: 380 and 520 for easy doorway exit
-      { x: 0, y: 600, w: 380, h: 50 },
-      { x: 520, y: 600, w: 380, h: 50 },
+      // Bottom wall split with wide opening between x: 320 and 580 for effortless doorway exit
+      { x: 0, y: 600, w: 320, h: 50 },
+      { x: 580, y: 600, w: 320, h: 50 },
 
       { x: 0, y: 0, w: 40, h: 650 },
       { x: 860, y: 0, w: 40, h: 650 },
@@ -318,13 +318,13 @@ export const MAP_ZONES: Record<ZoneId, ZoneMapData> = {
       {
         id: 'door_tjkt_to_courtyard',
         name: 'Exit to Courtyard',
-        x: 380,
-        y: 560,
-        w: 140,
-        h: 60,
+        x: 330,
+        y: 520,
+        w: 240,
+        h: 90,
         targetZone: 'courtyard',
         targetX: 795,
-        targetY: 120
+        targetY: 130
       }
     ],
     objects: [

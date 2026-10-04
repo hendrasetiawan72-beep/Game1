@@ -1,12 +1,16 @@
 import React from 'react';
 import { GameState, ZoneId } from '../types/game';
 import { sound } from '../utils/audio';
-import { BookOpen, HelpCircle, Key, Star, Volume2, VolumeX, Award } from 'lucide-react';
+import { BookOpen, HelpCircle, Key, Star, Volume2, VolumeX, Award, Clock, LogOut } from 'lucide-react';
 import { MAP_ZONES } from '../game/mapData';
 
 interface HUDProps {
   gameState: GameState;
   currentZone: ZoneId;
+  playerName: string;
+  studentClass: string;
+  elapsedSeconds: number;
+  onExitToCourtyard: () => void;
   onOpenPhraseBank: () => void;
   onOpenInventory: () => void;
   onOpenQuiz: () => void;
@@ -16,6 +20,10 @@ interface HUDProps {
 export const HUD: React.FC<HUDProps> = ({
   gameState,
   currentZone,
+  playerName,
+  studentClass,
+  elapsedSeconds,
+  onExitToCourtyard,
   onOpenPhraseBank,
   onOpenInventory,
   onOpenQuiz,
@@ -33,28 +41,44 @@ export const HUD: React.FC<HUDProps> = ({
 
   const isQuizReady = !gameState.completedQuizzes[gameState.currentChapter];
 
+  // Format elapsed seconds as MM:SS
+  const formatTime = (totalSec: number) => {
+    const mins = Math.floor(totalSec / 60);
+    const secs = totalSec % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
   return (
     <header className="absolute top-1.5 sm:top-2 inset-x-1.5 sm:inset-x-2 z-30 pointer-events-none select-none">
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-1.5 bg-[#FFFDF9]/90 backdrop-blur-md border-2 border-[#4A4A5E] rounded-2xl sm:rounded-3xl p-2 sm:px-4 shadow-md pointer-events-auto">
-        {/* Left: Day & Zone Info */}
-        <div className="flex items-center justify-between sm:justify-start gap-2">
-          <div className="flex items-center gap-1.5">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-1.5 bg-[#FFFDF9]/95 backdrop-blur-md border-2 border-[#4A4A5E] rounded-2xl sm:rounded-3xl p-2 sm:px-4 shadow-md pointer-events-auto">
+        {/* Left: Day, Zone Info, Student & Timer */}
+        <div className="flex items-center justify-between sm:justify-start gap-2 flex-wrap sm:flex-nowrap">
+          <div className="flex items-center gap-1.5 shrink-0">
             <div className="px-2 py-0.5 rounded-xl bg-[#FFF1B8] border border-[#4A4A5E] text-[#4A4A5E] font-black text-xs shrink-0">
               Day {gameState.currentChapter}
             </div>
             <div>
               <div className="flex items-center gap-1">
-                <h1 className="font-extrabold text-xs sm:text-sm text-[#4A4A5E] font-['Nunito'] truncate max-w-[140px] sm:max-w-none">
+                <h1 className="font-extrabold text-xs sm:text-sm text-[#4A4A5E] font-['Nunito'] truncate max-w-[130px] sm:max-w-none">
                   {zoneInfo?.name || 'SMK Muhiba'}
                 </h1>
               </div>
+              <div className="text-[10px] text-[#7A7A8E] font-bold truncate max-w-[120px] sm:max-w-none">
+                {playerName} · <span className="text-[#4A4A5E]">{studentClass}</span>
+              </div>
             </div>
+          </div>
+
+          {/* Running Timer */}
+          <div className="flex items-center gap-1 px-2 py-0.5 rounded-xl bg-[#FFFBF5] border border-[#4A4A5E]/20 text-[11px] font-bold text-[#4A4A5E] shrink-0">
+            <Clock size={12} className="text-[#5DADE2]" />
+            <span className="font-mono tabular-nums">{formatTime(elapsedSeconds)}</span>
           </div>
 
           {/* Trust Meter Progress Bar */}
           <div className="flex items-center gap-1.5 ml-auto sm:ml-2">
             <span className="text-[10px] font-bold text-[#7A7A8E]">Trust:</span>
-            <div className="w-16 sm:w-24 h-2 rounded-full bg-gray-200 border border-[#4A4A5E]/30 overflow-hidden relative">
+            <div className="w-14 sm:w-20 h-2 rounded-full bg-gray-200 border border-[#4A4A5E]/30 overflow-hidden relative">
               <div
                 className="h-full bg-gradient-to-r from-[#FFD9C7] via-[#FFF1B8] to-[#BFE8D6] transition-all duration-300 rounded-full"
                 style={{ width: `${Math.min(100, Math.max(0, gameState.trustMeter))}%` }}
@@ -64,8 +88,23 @@ export const HUD: React.FC<HUDProps> = ({
           </div>
         </div>
 
-        {/* Right: Quick Action Buttons */}
+        {/* Right: Actions, Quick Exit, Clues, Quiz */}
         <div className="flex items-center justify-between sm:justify-end gap-1 overflow-x-auto pt-0.5 sm:pt-0">
+          {/* Prominent Exit to Courtyard Button when inside any lab */}
+          {currentZone !== 'courtyard' && (
+            <button
+              onClick={() => {
+                sound.playSparkle();
+                onExitToCourtyard();
+              }}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#BFE8D6] hover:bg-[#A3E4D7] border-2 border-[#4A4A5E] text-[#1E8449] font-black text-[11px] shadow-xs active:scale-95 transition-all shrink-0 animate-pulse"
+              title="Return to Courtyard"
+            >
+              <LogOut size={12} />
+              <span>Exit to Courtyard</span>
+            </button>
+          )}
+
           {/* Score & Stars */}
           <div className="flex items-center gap-1 px-2 py-0.5 rounded-xl bg-[#FFFBF5] border border-[#4A4A5E]/20 text-[11px] font-bold text-[#4A4A5E] shrink-0">
             <Star size={12} className="text-amber-500 fill-amber-400" />
@@ -121,7 +160,7 @@ export const HUD: React.FC<HUDProps> = ({
             }}
             className={`flex items-center gap-1 px-2.5 py-0.5 rounded-full border border-[#4A4A5E] font-black text-[11px] transition-all shadow-xs shrink-0 ${
               isQuizReady
-                ? 'bg-[#BFE8D6] text-[#4A4A5E] animate-pulse'
+                ? 'bg-[#BFE8D6] text-[#4A4A5E] animate-bounce'
                 : 'bg-[#DCCFF0] text-[#4A4A5E]'
             }`}
             title="Take Chapter Quiz"

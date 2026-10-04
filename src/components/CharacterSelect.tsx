@@ -1,21 +1,34 @@
 import React, { useState } from 'react';
 import { AvatarType, MajorType } from '../types/game';
 import { sound } from '../utils/audio';
-import { Sparkles, Wrench, FileSpreadsheet, Network, ArrowRight } from 'lucide-react';
+import { Sparkles, Wrench, FileSpreadsheet, Network, ArrowRight, GraduationCap } from 'lucide-react';
 
 interface CharacterSelectProps {
-  onStart: (name: string, avatar: AvatarType, major: MajorType) => void;
+  onStart: (name: string, studentClass: string, avatar: AvatarType, major: MajorType) => void;
 }
+
+const CLASS_SUGGESTIONS = [
+  'X AKL 1',
+  'X AKL 2',
+  'X Otomotif 1',
+  'X Otomotif 2',
+  'X TJKT 1',
+  'X TJKT 2',
+  'XI AKL',
+  'XI Otomotif',
+  'XI TJKT'
+];
 
 export const CharacterSelect: React.FC<CharacterSelectProps> = ({ onStart }) => {
   const [name, setName] = useState<string>('Rizky');
+  const [studentClass, setStudentClass] = useState<string>('X AKL 1');
   const [avatar, setAvatar] = useState<AvatarType>('girl_hijab');
   const [major, setMajor] = useState<MajorType>('AKL');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     sound.playFanfare();
-    onStart(name.trim() || 'Student', avatar, major);
+    onStart(name.trim() || 'Student', studentClass.trim() || 'X AKL 1', avatar, major);
   };
 
   return (
@@ -30,32 +43,78 @@ export const CharacterSelect: React.FC<CharacterSelectProps> = ({ onStart }) => 
           <h1 className="text-xl sm:text-2xl font-black text-[#4A4A5E] font-['Nunito'] tracking-tight">
             Opinion Quest: The Muhiba Mystery
           </h1>
-          <p className="text-[11px] sm:text-xs text-[#7A7A8E] max-w-md mx-auto">
-            The school Golden Trophy has vanished on the eve of the 25th Anniversary! Choose your avatar and vocational major to solve the mystery through polite English dialogue.
+          <p className="text-[11px] sm:text-xs text-[#7A7A8E] max-w-md mx-auto leading-relaxed">
+            The school Golden Trophy has vanished on the eve of the 25th Anniversary! Enter your name, class, and choose your vocational major to begin the investigation.
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Student Name */}
+        <form onSubmit={handleSubmit} className="space-y-3.5">
+          {/* Student Name & Class Fields in 2 columns */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* Student Name */}
+            <div>
+              <label className="block text-[10px] sm:text-xs font-black uppercase tracking-wider text-[#4A4A5E] mb-1">
+                1. Student Name
+              </label>
+              <input
+                type="text"
+                value={name}
+                onChange={e => setName(e.target.value)}
+                placeholder="Enter your student name..."
+                maxLength={20}
+                className="w-full px-3.5 py-2 rounded-2xl bg-white border-2 border-[#4A4A5E] text-[#4A4A5E] font-bold text-xs sm:text-sm focus:outline-hidden focus:border-[#5DADE2] shadow-inner"
+                required
+              />
+            </div>
+
+            {/* Student Class / Grade */}
+            <div>
+              <label className="block text-[10px] sm:text-xs font-black uppercase tracking-wider text-[#4A4A5E] mb-1">
+                2. Class / Grade (Kelas)
+              </label>
+              <input
+                type="text"
+                value={studentClass}
+                onChange={e => setStudentClass(e.target.value)}
+                placeholder="e.g. X AKL 1, XI TKR 2..."
+                maxLength={15}
+                className="w-full px-3.5 py-2 rounded-2xl bg-white border-2 border-[#4A4A5E] text-[#4A4A5E] font-bold text-xs sm:text-sm focus:outline-hidden focus:border-[#5DADE2] shadow-inner"
+                required
+              />
+            </div>
+          </div>
+
+          {/* Quick Class Selection Pills */}
           <div>
-            <label className="block text-[10px] sm:text-xs font-black uppercase tracking-wider text-[#4A4A5E] mb-1">
-              1. Student Name
-            </label>
-            <input
-              type="text"
-              value={name}
-              onChange={e => setName(e.target.value)}
-              placeholder="Enter your student name..."
-              maxLength={15}
-              className="w-full px-3.5 py-2 rounded-2xl bg-white border-2 border-[#4A4A5E] text-[#4A4A5E] font-bold text-xs sm:text-sm focus:outline-hidden focus:border-[#5DADE2] shadow-inner"
-              required
-            />
+            <div className="flex items-center gap-1 text-[10px] text-[#7A7A8E] font-bold mb-1">
+              <GraduationCap size={12} />
+              <span>Quick Class Select:</span>
+            </div>
+            <div className="flex flex-wrap gap-1">
+              {CLASS_SUGGESTIONS.map(cls => (
+                <button
+                  key={cls}
+                  type="button"
+                  onClick={() => {
+                    sound.playClick();
+                    setStudentClass(cls);
+                  }}
+                  className={`px-2 py-0.5 rounded-lg text-[10px] font-bold border transition-all ${
+                    studentClass === cls
+                      ? 'bg-[#4A4A5E] text-white border-[#4A4A5E]'
+                      : 'bg-white text-[#7A7A8E] border-gray-300 hover:border-[#4A4A5E]'
+                  }`}
+                >
+                  {cls}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Avatar Choice */}
           <div>
             <label className="block text-[10px] sm:text-xs font-black uppercase tracking-wider text-[#4A4A5E] mb-1.5">
-              2. Choose Student Avatar
+              3. Choose Student Avatar
             </label>
             <div className="grid grid-cols-3 gap-2">
               {/* Boy */}
@@ -73,7 +132,7 @@ export const CharacterSelect: React.FC<CharacterSelectProps> = ({ onStart }) => 
                 <div className="w-11 h-11 sm:w-12 sm:h-12 mx-auto rounded-full bg-[#FFFBF5] border-2 border-[#4A4A5E] flex items-center justify-center text-xl shadow-xs mb-1.5">
                   👦
                 </div>
-                <span className="text-[11px] font-black text-[#4A4A5E] block">Boy Student</span>
+                <span className="text-[11px] font-black text-[#4A4A5E] block truncate">Boy Student</span>
                 <span className="text-[9px] text-[#7A7A8E]">Neat dark hair</span>
               </div>
 
@@ -92,7 +151,7 @@ export const CharacterSelect: React.FC<CharacterSelectProps> = ({ onStart }) => 
                 <div className="w-11 h-11 sm:w-12 sm:h-12 mx-auto rounded-full bg-[#FFFBF5] border-2 border-[#4A4A5E] flex items-center justify-center text-xl shadow-xs mb-1.5">
                   🧕
                 </div>
-                <span className="text-[11px] font-black text-[#4A4A5E] block">Girl (Hijab)</span>
+                <span className="text-[11px] font-black text-[#4A4A5E] block truncate">Girl (Hijab)</span>
                 <span className="text-[9px] text-[#7A7A8E]">Pastel veil</span>
               </div>
 
@@ -111,7 +170,7 @@ export const CharacterSelect: React.FC<CharacterSelectProps> = ({ onStart }) => 
                 <div className="w-11 h-11 sm:w-12 sm:h-12 mx-auto rounded-full bg-[#FFFBF5] border-2 border-[#4A4A5E] flex items-center justify-center text-xl shadow-xs mb-1.5">
                   👧
                 </div>
-                <span className="text-[11px] font-black text-[#4A4A5E] block">Girl (Ponytail)</span>
+                <span className="text-[11px] font-black text-[#4A4A5E] block truncate">Girl (Ponytail)</span>
                 <span className="text-[9px] text-[#7A7A8E]">Hair accessory</span>
               </div>
             </div>
@@ -120,7 +179,7 @@ export const CharacterSelect: React.FC<CharacterSelectProps> = ({ onStart }) => 
           {/* Vocational Major Selection */}
           <div>
             <label className="block text-[10px] sm:text-xs font-black uppercase tracking-wider text-[#4A4A5E] mb-1.5">
-              3. Choose Vocational Major
+              4. Choose Vocational Major
             </label>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               {/* AKL */}
@@ -139,9 +198,9 @@ export const CharacterSelect: React.FC<CharacterSelectProps> = ({ onStart }) => 
                   <FileSpreadsheet size={15} className="text-[#F5B041]" />
                   <span className="text-xs font-black text-[#4A4A5E]">AKL</span>
                 </div>
-                <p className="text-[10px] font-bold text-[#4A4A5E]">Accounting & Finance</p>
-                <p className="text-[9px] text-[#7A7A8E] mt-0.5">
-                  Financial audit trails & inventory balance debate.
+                <p className="text-[10px] font-bold text-[#4A4A5E] truncate">Accounting & Finance</p>
+                <p className="text-[9px] text-[#7A7A8E] mt-0.5 leading-snug">
+                  Audit trails & inventory ledger debates.
                 </p>
               </div>
 
@@ -161,9 +220,9 @@ export const CharacterSelect: React.FC<CharacterSelectProps> = ({ onStart }) => 
                   <Wrench size={15} className="text-[#5DADE2]" />
                   <span className="text-xs font-black text-[#4A4A5E]">Otomotif</span>
                 </div>
-                <p className="text-[10px] font-bold text-[#4A4A5E]">Automotive Engineering</p>
-                <p className="text-[9px] text-[#7A7A8E] mt-0.5">
-                  Mechanical diagnostics & restoration analysis.
+                <p className="text-[10px] font-bold text-[#4A4A5E] truncate">Automotive Tech</p>
+                <p className="text-[9px] text-[#7A7A8E] mt-0.5 leading-snug">
+                  Mechanical diagnostics & metal restoration.
                 </p>
               </div>
 
@@ -183,9 +242,9 @@ export const CharacterSelect: React.FC<CharacterSelectProps> = ({ onStart }) => 
                   <Network size={15} className="text-[#48C9B0]" />
                   <span className="text-xs font-black text-[#4A4A5E]">TJKT</span>
                 </div>
-                <p className="text-[10px] font-bold text-[#4A4A5E]">Network & Telecom</p>
-                <p className="text-[9px] text-[#7A7A8E] mt-0.5">
-                  CCTV server timestamp logs & patch logic.
+                <p className="text-[10px] font-bold text-[#4A4A5E] truncate">Network & Telecom</p>
+                <p className="text-[9px] text-[#7A7A8E] mt-0.5 leading-snug">
+                  CCTV server timestamp logs & patching.
                 </p>
               </div>
             </div>

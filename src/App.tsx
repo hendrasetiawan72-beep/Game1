@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { AvatarType, DialogueChoice, DialogueNode, GameState, MajorType, NPCData, PlayerState, ZoneId } from './types/game';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { AvatarType, DialogueChoice, DialogueNode, GameState, InspectData, MajorType, NPCData, PlayerState, ZoneId } from './types/game';
 import { DIALOGUE_NODES } from './data/story';
 import { GameCanvas } from './components/GameCanvas';
 import { HUD } from './components/HUD';
@@ -22,13 +22,14 @@ import { EngineTalk } from './components/Minigames/EngineTalk';
 import { NetworkConnect } from './components/Minigames/NetworkConnect';
 import { sound } from './utils/audio';
 
-const STORAGE_KEY = 'opinion_quest_muhiba_save_v1';
+const STORAGE_KEY = 'opinion_quest_muhiba_save_v2';
 
 const INITIAL_GAME_STATE: GameState = {
   currentChapter: 1,
   trustMeter: 60,
   score: 0,
   collectedClues: [],
+  elapsedSeconds: 0,
   completedMinigames: {
     akl: false,
     otomotif: false,
@@ -50,6 +51,7 @@ const INITIAL_GAME_STATE: GameState = {
 
 const INITIAL_PLAYER_STATE: PlayerState = {
   name: 'Rizky',
+  studentClass: 'X AKL 1',
   avatar: 'girl_hijab',
   major: 'AKL',
   x: 520,
@@ -88,11 +90,12 @@ export default function App() {
   const [showQuiz, setShowQuiz] = useState<boolean>(false);
   const [showChapterEnd, setShowChapterEnd] = useState<boolean>(false);
   const [showVictory, setShowVictory] = useState<boolean>(false);
-  const [inspectData, setInspectData] = useState<{ message: string; clueUnlocked?: boolean } | null>(null);
+  const [inspectData, setInspectData] = useState<InspectData | null>(null);
   const [isNearbyInteractable, setIsNearbyInteractable] = useState<boolean>(false);
 
-  // Virtual Controls Direction
+  // Virtual Controls Direction & Trigger Ref
   const [virtualDirection, setVirtualDirection] = useState<{ x: number; y: number } | null>(null);
+  const interactTriggerRef = useRef<(() => void) | null>(null);
 
   // Determine if any modal is currently active to prevent navigation collision
   const isAnyModalActive =
@@ -105,6 +108,20 @@ export default function App() {
     showVictory ||
     !!inspectData;
 
+  // Running Timer Effect: ticks every 1 second while playing
+  useEffect(() => {
+    if (!hasStarted || gameState.gameCompleted) return;
+
+    const timer = setInterval(() => {
+      setGameState(prev => ({
+        ...prev,
+        elapsedSeconds: (prev.elapsedSeconds || 0) + 1
+      }));
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [hasStarted, gameState.gameCompleted]);
+
   // Save to localStorage
   useEffect(() => {
     if (hasStarted) {
@@ -115,9 +132,10 @@ export default function App() {
   }, [gameState, player, hasStarted]);
 
   // Start new game from CharacterSelect
-  const handleStartGame = (name: string, avatar: AvatarType, major: MajorType) => {
+  const handleStartGame = (name: string, studentClass: string, avatar: AvatarType, major: MajorType) => {
     const newPlayer: PlayerState = {
       name,
+      studentClass,
       avatar,
       major,
       x: 520,
@@ -132,17 +150,38 @@ export default function App() {
     setHasStarted(true);
 
     setTimeout(() => {
-      let majorIntroMsg = `Welcome, ${name}! You are in the AKL (Accounting & Finance) department. Principal Pak Haryono asks for your analytical skills to examine the 25th Anniversary Golden Trophy registry.`;
+      let majorIntroMsg = `Welcome, ${name} (${studentClass})! As an AKL (Accounting & Finance) investigator, Principal Pak Haryono requests your analytical skills to examine the 25th Anniversary Golden Trophy registry.`;
 
       if (major === 'Otomotif') {
-        majorIntroMsg = `Welcome, ${name}! You are in the Otomotif department. Principal Pak Haryono requests your mechanical eye to examine the trophy pedestal mounts and workshop clues.`;
+        majorIntroMsg = `Welcome, ${name} (${studentClass})! As an Otomotif investigator, Principal Pak Haryono requests your mechanical eye to examine the trophy pedestal mounts and workshop clues.`;
       } else if (major === 'TJKT') {
-        majorIntroMsg = `Welcome, ${name}! You are in the TJKT (Computer Network) department. Principal Pak Haryono needs your technical expertise to check CCTV server timestamp logs.`;
+        majorIntroMsg = `Welcome, ${name} (${studentClass})! As a TJKT (Computer Network) investigator, Principal Pak Haryono needs your technical expertise to check CCTV server timestamp logs.`;
       }
 
       setInspectData({
+        title: 'Mission Briefing',
         message: majorIntroMsg,
-        clueUnlocked: false
+        clueUnlocked: false,
+        choices: [
+          {
+            text: 'I think we can solve this mystery together with polite dialogue and clear evidence.',
+            isCorrect: true,
+            feedback: 'Excellent! "I think..." opens your constructive viewpoint with confidence.',
+            trustChange: 15
+          },
+          {
+            text: 'In my opinion, we should first inspect the courtyard pedestal and interview witnesses.',
+            isCorrect: true,
+            feedback: 'Very proactive! "In my opinion..." proposes an orderly plan of action.',
+            trustChange: 15
+          },
+          {
+            text: 'From my point of view, checking the school labs will reveal the truth.',
+            isCorrect: true,
+            feedback: 'Analytical! "From my point of view..." directs attention to the departments.',
+            trustChange: 15
+          }
+        ]
       });
     }, 400);
   };
@@ -198,6 +237,20 @@ export default function App() {
     }));
   };
 
+  // Quick exit back to courtyard from any lab
+  const handleExitToCourtyard = () => {
+    let targetX = 550;
+    let targetY = 130;
+    if (player.zone === 'akl') {
+      targetX = 305;
+    } else if (player.zone === 'otomotif') {
+      targetX = 550;
+    } else if (player.zone === 'tjkt') {
+      targetX = 795;
+    }
+    handleEnterDoor('courtyard', targetX, targetY);
+  };
+
   // Trigger Minigame
   const handleTriggerMinigame = (type: 'akl' | 'otomotif' | 'tjkt') => {
     setActiveMinigame(type);
@@ -229,8 +282,8 @@ export default function App() {
     }));
   };
 
-  // Inspect Object
-  const handleInspectObject = (msg: string, clueId?: string) => {
+  // Inspect Object with interactive reflection choices
+  const handleInspectObject = (msg: string, clueId?: string, label?: string) => {
     let unlocked = false;
     if (clueId && !gameState.collectedClues.includes(clueId)) {
       unlocked = true;
@@ -243,8 +296,29 @@ export default function App() {
     }
 
     setInspectData({
+      title: label || 'Scene Examination',
       message: msg,
-      clueUnlocked: unlocked
+      clueUnlocked: unlocked,
+      choices: [
+        {
+          text: `In my opinion, this ${label ? label.toLowerCase() : 'evidence'} gives us an important clue.`,
+          isCorrect: true,
+          feedback: 'Well reasoned! "In my opinion..." introduces your reasoned evaluation.',
+          trustChange: 10
+        },
+        {
+          text: `From my point of view, we should connect this clue with witness statements.`,
+          isCorrect: true,
+          feedback: 'Excellent! "From my point of view..." connects physical clues logically.',
+          trustChange: 10
+        },
+        {
+          text: `I think this is completely useless and we should dismiss it.`,
+          isCorrect: false,
+          feedback: 'Caution! Prematurely ignoring clues can lead to misunderstandings.',
+          trustChange: -5
+        }
+      ]
     });
   };
 
@@ -307,15 +381,19 @@ export default function App() {
   };
 
   return (
-    <main className="w-screen h-screen relative overflow-hidden bg-[#FFFBF5] select-none font-['Nunito']">
+    <main className="w-full h-[100dvh] relative overflow-hidden bg-[#FFFBF5] select-none font-['Nunito']">
       {!hasStarted ? (
         <CharacterSelect onStart={handleStartGame} />
       ) : (
         <>
-          {/* Top HUD */}
+          {/* Top HUD with Timer and Exit Button */}
           <HUD
             gameState={gameState}
             currentZone={player.zone}
+            playerName={player.name}
+            studentClass={player.studentClass}
+            elapsedSeconds={gameState.elapsedSeconds || 0}
+            onExitToCourtyard={handleExitToCourtyard}
             onOpenPhraseBank={() => setShowPhraseBank(true)}
             onOpenInventory={() => setShowInventory(true)}
             onOpenQuiz={() => setShowQuiz(true)}
@@ -330,21 +408,26 @@ export default function App() {
             onTalkToNPC={handleTalkToNPC}
             onEnterDoor={handleEnterDoor}
             onTriggerMinigame={handleTriggerMinigame}
-            onInspectObject={(msg, clueId) => handleInspectObject(msg, clueId)}
+            onInspectObject={(msg, clueId, label) => handleInspectObject(msg, clueId, label)}
             virtualDirection={virtualDirection}
-            onInteractRequested={() => {}}
+            onRegisterInteractTrigger={trigger => {
+              interactTriggerRef.current = trigger;
+            }}
             setNearbyInteractable={setIsNearbyInteractable}
           />
 
-          {/* Virtual Controls for mobile & touch (Auto-hidden when any modal is open to avoid collision) */}
+          {/* Mobile-First Virtual Controls (Auto-hidden when any modal is open to avoid collision) */}
           <VirtualControls
             onDirectionChange={dir => setVirtualDirection(dir)}
             onInteract={() => {
-              const event = new KeyboardEvent('keydown', { code: 'KeyE' });
-              window.dispatchEvent(event);
+              if (interactTriggerRef.current) {
+                interactTriggerRef.current();
+              }
             }}
             isNearbyInteractable={isNearbyInteractable}
             isVisible={!isAnyModalActive}
+            currentZone={player.zone}
+            onExitToCourtyard={handleExitToCourtyard}
           />
 
           {/* Modals & Popups */}
@@ -415,20 +498,29 @@ export default function App() {
             />
           )}
 
-          {/* Scene Inspection Modal */}
+          {/* Scene Inspection Modal with Interactive Choices */}
           {inspectData && (
             <InspectModal
-              message={inspectData.message}
-              clueUnlocked={inspectData.clueUnlocked}
+              data={inspectData}
               onClose={() => setInspectData(null)}
+              onChoiceSelected={(isCorrect, trustChange) => {
+                setGameState(prev => ({
+                  ...prev,
+                  trustMeter: Math.min(100, Math.max(0, prev.trustMeter + trustChange)),
+                  score: prev.score + (isCorrect ? 15 : 0)
+                }));
+              }}
             />
           )}
 
-          {/* Victory Modal */}
+          {/* Victory Modal with Web3Forms Score Submission */}
           {showVictory && (
             <VictoryModal
               gameState={gameState}
               playerName={player.name}
+              studentClass={player.studentClass}
+              major={player.major}
+              elapsedSeconds={gameState.elapsedSeconds || 0}
               onPlayAgain={() => {
                 localStorage.removeItem(STORAGE_KEY);
                 setGameState(INITIAL_GAME_STATE);

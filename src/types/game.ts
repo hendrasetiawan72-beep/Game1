@@ -72,6 +72,7 @@ export interface QuizQuestion {
 
 export interface PlayerState {
   name: string;
+  studentClass: string;
   avatar: AvatarType;
   major: MajorType;
   x: number;
@@ -86,6 +87,7 @@ export interface GameState {
   trustMeter: number;
   score: number;
   collectedClues: string[];
+  elapsedSeconds: number;
   completedMinigames: {
     akl: boolean;
     otomotif: boolean;
@@ -103,4 +105,16 @@ export interface GameState {
   };
   talkedNpcs: string[];
   gameCompleted: boolean;
+}
+
+export interface InspectData {
+  title?: string;
+  message: string;
+  clueUnlocked?: boolean;
+  choices?: {
+    text: string;
+    isCorrect: boolean;
+    feedback: string;
+    trustChange?: number;
+  }[];
 }

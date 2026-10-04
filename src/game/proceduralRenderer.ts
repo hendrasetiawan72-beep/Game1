@@ -244,6 +244,38 @@ export class ProceduralRenderer {
       ctx.stroke();
     }
 
+    // Accounting Computer Desks with Monitors & Ledgers
+    this.roundRect(ctx, 130, 160, 240, 65, 8, '#FFFDF9', '#4A4A5E', 1.8);
+    this.roundRect(ctx, 510, 160, 240, 65, 8, '#FFFDF9', '#4A4A5E', 1.8);
+
+    // Glowing Computer Screens
+    for (let m = 0; m < 3; m++) {
+      // Left row monitors
+      this.roundRect(ctx, 150 + m * 75, 170, 42, 28, 4, '#34495E', '#2C3E50');
+      this.roundRect(ctx, 153 + m * 75, 173, 36, 22, 2, '#D5F5E3');
+      // Bar chart lines on screen
+      ctx.fillStyle = '#27AE60';
+      ctx.fillRect(158 + m * 75, 185, 5, 8);
+      ctx.fillRect(166 + m * 75, 180, 5, 13);
+      ctx.fillRect(174 + m * 75, 176, 5, 17);
+
+      // Right row monitors
+      this.roundRect(ctx, 530 + m * 75, 170, 42, 28, 4, '#34495E', '#2C3E50');
+      this.roundRect(ctx, 533 + m * 75, 173, 36, 22, 2, '#EBF5FB');
+      // Ledger numbers
+      ctx.fillStyle = '#2980B9';
+      ctx.fillRect(538 + m * 75, 177, 24, 3);
+      ctx.fillRect(538 + m * 75, 183, 18, 3);
+      ctx.fillRect(538 + m * 75, 189, 22, 3);
+    }
+
+    // Ledger binders on desk
+    this.roundRect(ctx, 100, 370, 60, 80, 6, '#C0392B', '#922B21');
+    this.roundRect(ctx, 104, 375, 52, 70, 4, '#E74C3C');
+    ctx.fillStyle = '#FFF1B8';
+    ctx.font = 'bold 8px Nunito, sans-serif';
+    ctx.fillText('AKL 2024', 110, 410);
+
     // Bulletin board with financial chart on North wall
     this.roundRect(ctx, 400, 10, 100, 32, 4, '#D7CCC8', '#4A4A5E', 1);
     ctx.fillStyle = '#4CAF50';
@@ -267,10 +299,43 @@ export class ProceduralRenderer {
     ctx.strokeRect(460, 130, 220, 140);
     ctx.restore();
 
-    // Oil spill / clean floor sheen
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
-    ctx.fillRect(140, 220, 60, 4);
-    ctx.fillRect(500, 200, 45, 4);
+    // Hydraulic Scissor Lift Platform in workshop bay
+    this.roundRect(ctx, 130, 150, 220, 120, 8, '#7F8C8D', '#34495E', 2);
+    this.roundRect(ctx, 140, 160, 200, 100, 4, '#95A5A6');
+    // Safety diagonal stripes on lift edge
+    ctx.save();
+    ctx.strokeStyle = '#F1C40F';
+    ctx.lineWidth = 4;
+    for (let lx = 145; lx < 330; lx += 18) {
+      ctx.beginPath();
+      ctx.moveTo(lx, 160);
+      ctx.lineTo(lx + 8, 172);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    // Motorcycle chassis on lift
+    this.roundRect(ctx, 200, 190, 80, 24, 6, '#C0392B', '#78281F', 2);
+    ctx.beginPath();
+    ctx.arc(180, 205, 16, 0, Math.PI * 2);
+    ctx.arc(280, 205, 16, 0, Math.PI * 2);
+    ctx.fillStyle = '#2C3E50';
+    ctx.fill();
+    ctx.strokeStyle = '#BDC3C7';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+
+    // Red Rolling Tool Cabinet with drawers
+    this.roundRect(ctx, 490, 150, 75, 100, 6, '#E74C3C', '#922B21', 2);
+    for (let d = 0; d < 4; d++) {
+      this.roundRect(ctx, 496, 158 + d * 22, 63, 16, 3, '#C0392B');
+      this.roundRect(ctx, 518, 164 + d * 22, 20, 4, 1, '#F4D03F'); // brass handle
+    }
+
+    // Oil sheen & clean floor reflections
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+    ctx.fillRect(140, 280, 70, 5);
+    ctx.fillRect(500, 250, 55, 5);
   }
 
   private static drawTJKTFloor(ctx: CanvasRenderingContext2D, w: number, h: number, timeTick: number) {
@@ -279,7 +344,7 @@ export class ProceduralRenderer {
 
     // High-tech anti-static tile grid
     ctx.save();
-    ctx.strokeStyle = '#F8CFDA';
+    ctx.strokeStyle = 'rgba(248, 207, 218, 0.6)';
     ctx.lineWidth = 1.5;
     for (let x = 60; x < w - 60; x += 55) {
       ctx.beginPath();
@@ -294,13 +359,48 @@ export class ProceduralRenderer {
       ctx.stroke();
     }
 
+    // Dual 42U Server Racks
+    this.roundRect(ctx, 140, 130, 210, 120, 8, '#2C3E50', '#1A252F', 2);
+    this.roundRect(ctx, 490, 130, 260, 120, 8, '#2C3E50', '#1A252F', 2);
+
+    // Blinking Server Port LEDs
+    const blinkA = (timeTick % 30) < 15;
+    const blinkB = (timeTick % 20) < 10;
+    const blinkC = (timeTick % 40) < 20;
+
+    for (let r = 0; r < 3; r++) {
+      // Rack 1 units
+      this.roundRect(ctx, 150, 142 + r * 34, 190, 24, 4, '#34495E');
+      ctx.fillStyle = blinkA ? '#2ECC71' : '#27AE60';
+      ctx.fillRect(160, 150 + r * 34, 6, 6);
+      ctx.fillStyle = blinkB ? '#3498DB' : '#2980B9';
+      ctx.fillRect(172, 150 + r * 34, 6, 6);
+      ctx.fillStyle = blinkC ? '#F1C40F' : '#E67E22';
+      ctx.fillRect(184, 150 + r * 34, 6, 6);
+
+      // Ethernet cable loops
+      ctx.strokeStyle = r === 0 ? '#3498DB' : r === 1 ? '#E74C3C' : '#2ECC71';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(210, 154 + r * 34);
+      ctx.bezierCurveTo(240, 170 + r * 34, 270, 135 + r * 34, 300, 154 + r * 34);
+      ctx.stroke();
+
+      // Rack 2 units
+      this.roundRect(ctx, 500, 142 + r * 34, 240, 24, 4, '#34495E');
+      ctx.fillStyle = blinkC ? '#2ECC71' : '#1ABC9C';
+      ctx.fillRect(515, 150 + r * 34, 6, 6);
+      ctx.fillStyle = blinkA ? '#9B59B6' : '#8E44AD';
+      ctx.fillRect(527, 150 + r * 34, 6, 6);
+    }
+
     // Fiber optic pulse conduit
-    const pulseOffset = (timeTick * 1.8) % 260;
+    const pulseOffset = (timeTick * 2.2) % 260;
     ctx.strokeStyle = '#FFFFFF';
-    ctx.lineWidth = 3;
+    ctx.lineWidth = 3.5;
     ctx.beginPath();
     ctx.moveTo(140 + pulseOffset, 120);
-    ctx.lineTo(165 + pulseOffset, 120);
+    ctx.lineTo(170 + pulseOffset, 120);
     ctx.stroke();
     ctx.restore();
   }
@@ -337,12 +437,12 @@ export class ProceduralRenderer {
 
     // Bottom wall
     if (zone.id !== 'courtyard') {
-      // Open doorway between x: 380 and 520
-      this.roundRect(ctx, 0, zone.height - 50, 380, 50, 0, zone.wallColor);
-      this.roundRect(ctx, 0, zone.height - 50, 380, 4, 0, zone.accentColor);
+      // Open doorway between x: 320 and 580 for smooth exit back to Courtyard
+      this.roundRect(ctx, 0, zone.height - 50, 320, 50, 0, zone.wallColor);
+      this.roundRect(ctx, 0, zone.height - 50, 320, 4, 0, zone.accentColor);
 
-      this.roundRect(ctx, 520, zone.height - 50, zone.width - 520, 50, 0, zone.wallColor);
-      this.roundRect(ctx, 520, zone.height - 50, zone.width - 520, 4, 0, zone.accentColor);
+      this.roundRect(ctx, 580, zone.height - 50, zone.width - 580, 50, 0, zone.wallColor);
+      this.roundRect(ctx, 580, zone.height - 50, zone.width - 580, 4, 0, zone.accentColor);
     } else {
       this.roundRect(ctx, 0, zone.height - 50, zone.width, 50, 0, zone.wallColor);
       this.roundRect(ctx, 0, zone.height - 50, zone.width, 4, 0, zone.accentColor);
@@ -358,24 +458,26 @@ export class ProceduralRenderer {
 
   private static drawDoor(ctx: CanvasRenderingContext2D, door: typeof MAP_ZONES['courtyard']['doors'][0], timeTick: number) {
     const pulse = Math.sin(timeTick * 0.08) * 3;
-    this.drawShadow(ctx, door.x + door.w / 2, door.y + door.h / 2, door.w / 2, 12);
+    this.drawShadow(ctx, door.x + door.w / 2, door.y + door.h / 2, door.w / 2, 14);
 
-    // Doorway floor mat
-    this.roundRect(ctx, door.x, door.y, door.w, door.h, 8, '#FFFBF5', '#4A4A5E', 2);
-    this.roundRect(ctx, door.x + 4, door.y + 4, door.w - 8, door.h - 8, 6, '#BFDDF5');
+    // Doorway floor mat with glowing perimeter
+    this.roundRect(ctx, door.x, door.y, door.w, door.h, 10, '#FFFBF5', '#4A4A5E', 2.5);
+    this.roundRect(ctx, door.x + 5, door.y + 5, door.w - 10, door.h - 10, 8, '#BFDDF5');
 
-    // Direction arrow
+    // Direction arrow & prompt
     ctx.save();
-    ctx.fillStyle = '#4A4A5E';
+    ctx.fillStyle = '#1E8449';
     ctx.beginPath();
     if (door.y < 100) {
-      ctx.moveTo(door.x + door.w / 2, door.y + 12 - pulse);
-      ctx.lineTo(door.x + door.w / 2 - 10, door.y + 26 - pulse);
-      ctx.lineTo(door.x + door.w / 2 + 10, door.y + 26 - pulse);
+      // Arrow pointing up
+      ctx.moveTo(door.x + door.w / 2, door.y + 10 - pulse);
+      ctx.lineTo(door.x + door.w / 2 - 14, door.y + 26 - pulse);
+      ctx.lineTo(door.x + door.w / 2 + 14, door.y + 26 - pulse);
     } else {
-      ctx.moveTo(door.x + door.w / 2, door.y + 36 + pulse);
-      ctx.lineTo(door.x + door.w / 2 - 10, door.y + 20 + pulse);
-      ctx.lineTo(door.x + door.w / 2 + 10, door.y + 20 + pulse);
+      // Arrow pointing down
+      ctx.moveTo(door.x + door.w / 2, door.y + door.h - 10 + pulse);
+      ctx.lineTo(door.x + door.w / 2 - 14, door.y + door.h - 26 + pulse);
+      ctx.lineTo(door.x + door.w / 2 + 14, door.y + door.h - 26 + pulse);
     }
     ctx.fill();
 
@@ -383,7 +485,7 @@ export class ProceduralRenderer {
     ctx.font = 'bold 11px Poppins, sans-serif';
     ctx.textAlign = 'center';
     ctx.fillStyle = '#4A4A5E';
-    const textY = door.y > 100 ? door.y - 10 : door.y + door.h + 16;
+    const textY = door.y > 100 ? door.y - 12 : door.y + door.h + 18;
     ctx.fillText(door.name, door.x + door.w / 2, textY);
     ctx.restore();
   }
@@ -524,14 +626,25 @@ export class ProceduralRenderer {
       ctx.fillText('Kantin Bu Siti', obj.x + obj.w / 2, obj.y + obj.h + 24);
 
     } else if (obj.type === 'gate_sign') {
-      // Main Gate & Grand Sign
-      this.roundRect(ctx, obj.x, obj.y, obj.w, obj.h, 8, '#FFFBF5', '#4A4A5E', 2);
-      this.roundRect(ctx, obj.x + 6, obj.y + 4, obj.w - 12, obj.h - 8, 6, '#BFE8D6');
+      // Main Gate & Grand Sign - neat layout with safe padding so text stays strictly inside the plaque
+      this.drawShadow(ctx, obj.x + obj.w / 2, obj.y + obj.h / 2 + 2, obj.w / 2, obj.h / 2);
+      this.roundRect(ctx, obj.x, obj.y, obj.w, obj.h, 10, '#FFFDF9', '#4A4A5E', 2.5);
+      this.roundRect(ctx, obj.x + 5, obj.y + 4, obj.w - 10, obj.h - 8, 7, '#BFE8D6', '#4A4A5E', 1);
 
-      ctx.fillStyle = '#4A4A5E';
-      ctx.font = 'bold 11px Poppins, sans-serif';
+      ctx.save();
       ctx.textAlign = 'center';
-      ctx.fillText('GERBANG UTAMA: SMK MUHAMMADIYAH BAWANG', obj.x + obj.w / 2, obj.y + 19);
+      ctx.textBaseline = 'middle';
+
+      // Top line: GERBANG UTAMA
+      ctx.fillStyle = '#1E8449';
+      ctx.font = 'bold 10px Poppins, sans-serif';
+      ctx.fillText('GERBANG UTAMA', obj.x + obj.w / 2, obj.y + 15);
+
+      // Bottom line: SMK MUHAMMADIYAH BAWANG
+      ctx.fillStyle = '#2C3E50';
+      ctx.font = 'bold 11px Poppins, sans-serif';
+      ctx.fillText('SMK MUHAMMADIYAH BAWANG', obj.x + obj.w / 2, obj.y + 30);
+      ctx.restore();
 
     } else if (obj.type === 'minigame_station') {
       // Detailed Minigame Terminals
@@ -669,6 +782,12 @@ export class ProceduralRenderer {
     } else if (avatarType === 'teacher_rini' || avatarType === 'teacher_nina') {
       this.roundRect(ctx, x - 13, y - 2, 26, 24, 6, '#DCCFF0');
       this.roundRect(ctx, x - 4, y, 8, 22, 2, '#FFFBF5');
+    } else if (avatarType === 'teacher_syamsul') {
+      this.roundRect(ctx, x - 13, y - 2, 26, 24, 6, '#A3E4D7', '#1E8449');
+      this.roundRect(ctx, x - 4, y + 2, 8, 16, 2, '#D1F2EB');
+    } else if (avatarType === 'student_hendra') {
+      this.roundRect(ctx, x - 13, y - 2, 26, 24, 6, '#5DADE2', '#2E86C1');
+      this.roundRect(ctx, x + 2, y + 4, 8, 10, 2, '#F4D03F'); // tool pocket
     } else if (avatarType === 'senior_rafi') {
       this.roundRect(ctx, x - 13, y - 2, 26, 24, 6, '#4A4A5E');
       ctx.strokeStyle = '#F4D03F';
@@ -690,6 +809,17 @@ export class ProceduralRenderer {
     if (avatarType === 'security') {
       this.roundRect(ctx, x - 16, headY - 18, 32, 10, 4, '#34495E');
       this.roundRect(ctx, x - 20, headY - 10, 40, 5, 2, '#2C3E50');
+    } else if (avatarType === 'teacher_syamsul') {
+      // Islamic Peci / Songkok
+      this.roundRect(ctx, x - 14, headY - 18, 28, 12, 3, '#1B2631', '#17202A');
+      ctx.beginPath();
+      ctx.arc(x, headY - 6, 14, Math.PI, 0);
+      ctx.fillStyle = '#2C3E50';
+      ctx.fill();
+    } else if (avatarType === 'student_hendra') {
+      // Mechanic work cap
+      this.roundRect(ctx, x - 15, headY - 18, 30, 10, 4, '#E74C3C', '#C0392B');
+      this.roundRect(ctx, x - 18, headY - 10, 36, 4, 2, '#C0392B');
     } else if (avatarType === 'canteen' || avatarType === 'teacher_rini' || avatarType === 'girl_student') {
       ctx.beginPath();
       ctx.arc(x, headY - 2, 18, 0, Math.PI * 2);
