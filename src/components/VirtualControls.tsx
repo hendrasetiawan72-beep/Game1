@@ -21,10 +21,21 @@ export const VirtualControls: React.FC<VirtualControlsProps> = ({
   onExitToCourtyard
 }) => {
   const [activeDir, setActiveDir] = useState<string | null>(null);
+  const lastActionTime = React.useRef<number>(0);
 
   if (!isVisible) {
     return null;
   }
+
+  const handleActionClick = (e: React.SyntheticEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const now = Date.now();
+    if (now - lastActionTime.current < 450) return;
+    lastActionTime.current = now;
+    sound.playClick();
+    onInteract();
+  };
 
   const handleDirStart = (e: React.TouchEvent | React.MouseEvent, x: number, y: number, name: string) => {
     e.preventDefault();
@@ -147,17 +158,8 @@ export const VirtualControls: React.FC<VirtualControlsProps> = ({
 
           {/* Floating Action Button: TALK / INTERACT / ENTER */}
           <button
-            onTouchStart={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              sound.playClick();
-              onInteract();
-            }}
-            onClick={(e) => {
-              e.stopPropagation();
-              sound.playClick();
-              onInteract();
-            }}
+            onTouchStart={handleActionClick}
+            onClick={handleActionClick}
             aria-label="Action button"
             className={`w-16 h-16 sm:w-20 sm:h-20 rounded-full border-3 border-[#4A4A5E] shadow-2xl flex flex-col items-center justify-center transition-all active:scale-90 ${
               isNearbyInteractable

@@ -3,6 +3,8 @@ import { AnsweredNPCRecord } from '../types/game';
 import { sound } from '../utils/audio';
 import { CheckCircle2, MessageSquare, Volume2, X, Award, FileCheck } from 'lucide-react';
 
+import { getSpeakerGender } from './DialogueModal';
+
 interface ReviewedDialogueModalProps {
   record: AnsweredNPCRecord;
   onClose: () => void;
@@ -12,9 +14,17 @@ export const ReviewedDialogueModal: React.FC<ReviewedDialogueModalProps> = ({
   record,
   onClose
 }) => {
+  const speakerGender = getSpeakerGender(record.speaker, record.avatarType);
+
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-2.5 sm:p-4 bg-black/60 backdrop-blur-xs select-none">
-      <div className="w-full max-w-lg bg-[#FFFDF9] border-3 border-[#4A4A5E] rounded-3xl p-4 sm:p-5 shadow-2xl flex flex-col space-y-3.5 max-h-[85vh] overflow-y-auto animate-in zoom-in-95 duration-200">
+    <div
+      onClick={e => e.stopPropagation()}
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-2.5 sm:p-4 bg-black/60 backdrop-blur-xs select-none"
+    >
+      <div
+        onClick={e => e.stopPropagation()}
+        className="w-full max-w-lg bg-[#FFFDF9] border-3 border-[#4A4A5E] rounded-3xl p-4 sm:p-5 shadow-2xl flex flex-col space-y-3.5 max-h-[85vh] overflow-y-auto animate-in zoom-in-95 duration-200"
+      >
         {/* Header */}
         <div className="flex items-center justify-between pb-2.5 border-b-2 border-[#BFDDF5]">
           <div className="flex items-center gap-2.5">
@@ -29,6 +39,15 @@ export const ReviewedDialogueModal: React.FC<ReviewedDialogueModalProps> = ({
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#FFF1B8] text-[#4A4A5E] border border-[#4A4A5E]/20">
                   {record.speakerRole}
                 </span>
+                <span
+                  className={`text-[8.5px] font-bold px-1.5 py-0.2 rounded-full border ${
+                    speakerGender === 'female'
+                      ? 'bg-rose-50 text-rose-700 border-rose-200'
+                      : 'bg-blue-50 text-blue-700 border-blue-200'
+                  }`}
+                >
+                  {speakerGender === 'female' ? '♀ Female Voice' : '♂ Male Voice'}
+                </span>
               </div>
               <span className="text-[10px] font-bold text-[#27AE60] flex items-center gap-1 mt-0.5">
                 <FileCheck size={11} /> Interview Completed · Day {record.chapter}
@@ -38,11 +57,12 @@ export const ReviewedDialogueModal: React.FC<ReviewedDialogueModalProps> = ({
 
           <div className="flex items-center gap-1">
             <button
-              onClick={() => sound.speakPhrase(`${record.questionText} ${record.chosenAnswer}`)}
-              className="p-1.5 rounded-xl bg-[#FFFBF5] border border-[#4A4A5E]/30 hover:bg-[#BFDDF5] text-[#4A4A5E] transition-all"
-              title="Pronounce interview statement"
+              onClick={() => sound.speakPhrase(`${record.questionText} ${record.chosenAnswer}`, speakerGender)}
+              className="p-1.5 rounded-xl bg-[#FFFBF5] border border-[#4A4A5E]/30 hover:bg-[#BFDDF5] text-[#4A4A5E] transition-all flex items-center gap-1"
+              title={`Pronounce interview statement (${speakerGender} voice)`}
             >
               <Volume2 size={16} />
+              <span className="text-[10px] font-bold hidden sm:inline">Listen</span>
             </button>
             <button
               onClick={() => {

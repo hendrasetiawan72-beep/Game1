@@ -59,18 +59,20 @@ export const MAP_ZONES: Record<ZoneId, ZoneMapData> = {
     wallColor: '#C8E6C9',
     accentColor: '#81C784',
     obstacles: [
-      // Top wall split to allow door entries at x: 250-360, 495-605, 740-850
-      { x: 0, y: 0, w: 250, h: 50 },
-      { x: 360, y: 0, w: 135, h: 50 },
-      { x: 605, y: 0, w: 135, h: 50 },
-      { x: 850, y: 0, w: 250, h: 50 },
+      // Top wall - grand solid facade
+      { x: 0, y: 0, w: 1100, h: 50 },
 
       // Bottom wall
       { x: 0, y: 700, w: 1100, h: 50 },
 
-      // Left and right perimeter walls
-      { x: 0, y: 0, w: 40, h: 750 },
-      { x: 1060, y: 0, w: 40, h: 750 },
+      // Left perimeter wall - split for Bengkel Otomotif doorway at y: 280-385
+      { x: 0, y: 0, w: 40, h: 280 },
+      { x: 0, y: 385, w: 40, h: 365 },
+
+      // Right perimeter wall - split for Lab AKL (y: 160-255) and Lab TJKT (y: 310-405)
+      { x: 1060, y: 0, w: 40, h: 160 },
+      { x: 1060, y: 255, w: 40, h: 55 },
+      { x: 1060, y: 405, w: 40, h: 345 },
 
       // Buildings & furniture
       { x: 80, y: 480, w: 140, h: 120 }, // Security post
@@ -85,35 +87,37 @@ export const MAP_ZONES: Record<ZoneId, ZoneMapData> = {
       { x: 640, y: 520, w: 100, h: 50 }
     ],
     doors: [
+      // Sebelah Kiri: Bengkel Otomotif
+      {
+        id: 'door_to_otomotif',
+        name: 'Bengkel Otomotif',
+        x: 10,
+        y: 285,
+        w: 75,
+        h: 95,
+        targetZone: 'otomotif',
+        targetX: 450,
+        targetY: 480
+      },
+      // Sebelah Kanan: Laboratorium AKL & Laboratorium TJKT
       {
         id: 'door_to_akl',
-        name: 'AKL Accounting Lab',
-        x: 250,
-        y: 20,
-        w: 110,
-        h: 70,
+        name: 'Laboratorium AKL',
+        x: 1015,
+        y: 165,
+        w: 75,
+        h: 85,
         targetZone: 'akl',
         targetX: 450,
         targetY: 480
       },
       {
-        id: 'door_to_otomotif',
-        name: 'Otomotif Workshop',
-        x: 495,
-        y: 20,
-        w: 110,
-        h: 70,
-        targetZone: 'otomotif',
-        targetX: 450,
-        targetY: 480
-      },
-      {
         id: 'door_to_tjkt',
-        name: 'TJKT Network Lab',
-        x: 740,
-        y: 20,
-        w: 110,
-        h: 70,
+        name: 'Laboratorium TJKT',
+        x: 1015,
+        y: 315,
+        w: 75,
+        h: 85,
         targetZone: 'tjkt',
         targetX: 450,
         targetY: 480
@@ -200,8 +204,8 @@ export const MAP_ZONES: Record<ZoneId, ZoneMapData> = {
         w: 240,
         h: 90,
         targetZone: 'courtyard',
-        targetX: 305,
-        targetY: 130
+        targetX: 960,
+        targetY: 205
       }
     ],
     objects: [
@@ -262,8 +266,8 @@ export const MAP_ZONES: Record<ZoneId, ZoneMapData> = {
         w: 240,
         h: 90,
         targetZone: 'courtyard',
-        targetX: 550,
-        targetY: 130
+        targetX: 130,
+        targetY: 330
       }
     ],
     objects: [
@@ -323,8 +327,8 @@ export const MAP_ZONES: Record<ZoneId, ZoneMapData> = {
         w: 240,
         h: 90,
         targetZone: 'courtyard',
-        targetX: 795,
-        targetY: 130
+        targetX: 960,
+        targetY: 355
       }
     ],
     objects: [

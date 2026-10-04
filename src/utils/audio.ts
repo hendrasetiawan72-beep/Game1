@@ -51,19 +51,21 @@ class SoundManager {
     osc.stop(this.ctx.currentTime + 0.05);
   }
 
-  // Melodic chatter blip for NPC dialogue text
-  public playTalkBlip(seed: number = 0) {
+  // Melodic chatter blip for NPC dialogue text with gender-specific pitch
+  public playTalkBlip(gender: 'male' | 'female' = 'male', seed: number = 0) {
     if (!this.soundEnabled) return;
     this.initContext();
     if (!this.ctx) return;
 
-    const freqs = [380, 420, 480, 520, 560];
-    const freq = freqs[seed % freqs.length] || 440;
+    const maleFreqs = [150, 175, 195, 220, 245];
+    const femaleFreqs = [380, 420, 460, 500, 560];
+    const freqs = gender === 'female' ? femaleFreqs : maleFreqs;
+    const freq = freqs[seed % freqs.length] || (gender === 'female' ? 440 : 200);
 
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
 
-    osc.type = 'triangle';
+    osc.type = gender === 'female' ? 'triangle' : 'sine';
     osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
     osc.frequency.linearRampToValueAtTime(freq * 1.1, this.ctx.currentTime + 0.04);
 
@@ -235,15 +237,43 @@ class SoundManager {
     osc.stop(this.ctx.currentTime + 0.5);
   }
 
-  // Speech pronunciation synthesis for learning English
-  public speakPhrase(text: string) {
+  // Speech pronunciation synthesis for learning English with realistic male/female voice tuning
+  public speakPhrase(text: string, gender: 'male' | 'female' = 'male') {
     if (typeof window === 'undefined' || !window.speechSynthesis) return;
     try {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = 'en-US';
-      utterance.rate = 0.9; // clear, comfortable learner pace
-      utterance.pitch = 1.0;
+      utterance.rate = 0.9; // comfortable educational pace
+
+      if (gender === 'female') {
+        utterance.pitch = 1.25; // Bright, clear female pitch
+      } else {
+        utterance.pitch = 0.82; // Deep, resonant masculine pitch
+      }
+
+      const voices = window.speechSynthesis.getVoices();
+      if (voices && voices.length > 0) {
+        const enVoices = voices.filter(v => v.lang.startsWith('en'));
+        if (gender === 'female') {
+          const femaleVoice = enVoices.find(v => {
+            const name = v.name.toLowerCase();
+            return name.includes('female') || name.includes('zira') || name.includes('samantha') ||
+                   name.includes('victoria') || name.includes('karen') || name.includes('susan') ||
+                   name.includes('jenny') || name.includes('aria') || (name.includes('google') && !name.includes('uk english male'));
+          });
+          if (femaleVoice) utterance.voice = femaleVoice;
+        } else {
+          const maleVoice = enVoices.find(v => {
+            const name = v.name.toLowerCase();
+            return name.includes('male') || name.includes('david') || name.includes('george') ||
+                   name.includes('guy') || name.includes('james') || name.includes('guy') ||
+                   name.includes('daniel') || name.includes('mark') || name.includes('steffan');
+          });
+          if (maleVoice) utterance.voice = maleVoice;
+        }
+      }
+
       window.speechSynthesis.speak(utterance);
     } catch {
       // SpeechSynthesis may fail if restricted, fail gracefully

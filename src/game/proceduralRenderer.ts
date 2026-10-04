@@ -120,10 +120,14 @@ export class ProceduralRenderer {
     }
     ctx.restore();
 
-    // Connecting paths to doors
-    this.roundRect(ctx, 265, 50, 80, 120, 12, '#FFFBF5', '#E5DFD5', 1);
-    this.roundRect(ctx, 510, 50, 80, 120, 12, '#FFFBF5', '#E5DFD5', 1);
-    this.roundRect(ctx, 755, 50, 80, 120, 12, '#FFFBF5', '#E5DFD5', 1);
+    // Connecting stone pathways to left and right workshop & lab doors
+    // Left path to Bengkel Otomotif
+    this.roundRect(ctx, 40, 300, 240, 65, 10, '#FFFBF5', '#E5DFD5', 1);
+    // Right path to Lab AKL
+    this.roundRect(ctx, 810, 180, 210, 55, 10, '#FFFBF5', '#E5DFD5', 1);
+    // Right path to Lab TJKT
+    this.roundRect(ctx, 810, 330, 210, 55, 10, '#FFFBF5', '#E5DFD5', 1);
+    // South path to main school gate
     this.roundRect(ctx, 485, 560, 130, 140, 12, '#FFFBF5', '#E5DFD5', 1);
 
     // Decorative stone fountains / planters
@@ -409,31 +413,37 @@ export class ProceduralRenderer {
     ctx.save();
 
     // Top wall
-    if (zone.id === 'courtyard') {
-      // Split top wall for 3 doorway arches
-      this.roundRect(ctx, 0, 0, 250, 50, 0, zone.wallColor);
-      this.roundRect(ctx, 0, 46, 250, 4, 0, zone.accentColor);
-
-      this.roundRect(ctx, 360, 0, 135, 50, 0, zone.wallColor);
-      this.roundRect(ctx, 360, 46, 135, 4, 0, zone.accentColor);
-
-      this.roundRect(ctx, 605, 0, 135, 50, 0, zone.wallColor);
-      this.roundRect(ctx, 605, 46, 135, 4, 0, zone.accentColor);
-
-      this.roundRect(ctx, 850, 0, zone.width - 850, 50, 0, zone.wallColor);
-      this.roundRect(ctx, 850, 46, zone.width - 850, 4, 0, zone.accentColor);
-    } else {
-      this.roundRect(ctx, 0, 0, zone.width, 50, 0, zone.wallColor);
-      this.roundRect(ctx, 0, 46, zone.width, 4, 0, zone.accentColor);
-    }
+    this.roundRect(ctx, 0, 0, zone.width, 50, 0, zone.wallColor);
+    this.roundRect(ctx, 0, 46, zone.width, 4, 0, zone.accentColor);
 
     // Left wall
-    this.roundRect(ctx, 0, 0, 40, zone.height, 0, zone.wallColor);
-    this.roundRect(ctx, 36, 0, 4, zone.height, 0, zone.accentColor);
+    if (zone.id === 'courtyard') {
+      // Split left wall for Bengkel Otomotif doorway at y: 280-385
+      this.roundRect(ctx, 0, 0, 40, 280, 0, zone.wallColor);
+      this.roundRect(ctx, 36, 0, 4, 280, 0, zone.accentColor);
+
+      this.roundRect(ctx, 0, 385, 40, zone.height - 385, 0, zone.wallColor);
+      this.roundRect(ctx, 36, 385, 4, zone.height - 385, 0, zone.accentColor);
+    } else {
+      this.roundRect(ctx, 0, 0, 40, zone.height, 0, zone.wallColor);
+      this.roundRect(ctx, 36, 0, 4, zone.height, 0, zone.accentColor);
+    }
 
     // Right wall
-    this.roundRect(ctx, zone.width - 40, 0, 40, zone.height, 0, zone.wallColor);
-    this.roundRect(ctx, zone.width - 40, 0, 4, zone.height, 0, zone.accentColor);
+    if (zone.id === 'courtyard') {
+      // Split right wall for Lab AKL (y: 160-255) and Lab TJKT (y: 310-405)
+      this.roundRect(ctx, zone.width - 40, 0, 40, 160, 0, zone.wallColor);
+      this.roundRect(ctx, zone.width - 40, 0, 4, 160, 0, zone.accentColor);
+
+      this.roundRect(ctx, zone.width - 40, 255, 40, 55, 0, zone.wallColor);
+      this.roundRect(ctx, zone.width - 40, 255, 4, 55, 0, zone.accentColor);
+
+      this.roundRect(ctx, zone.width - 40, 405, 40, zone.height - 405, 0, zone.wallColor);
+      this.roundRect(ctx, zone.width - 40, 405, 4, zone.height - 405, 0, zone.accentColor);
+    } else {
+      this.roundRect(ctx, zone.width - 40, 0, 40, zone.height, 0, zone.wallColor);
+      this.roundRect(ctx, zone.width - 40, 0, 4, zone.height, 0, zone.accentColor);
+    }
 
     // Bottom wall
     if (zone.id !== 'courtyard') {
@@ -468,13 +478,28 @@ export class ProceduralRenderer {
     ctx.save();
     ctx.fillStyle = '#1E8449';
     ctx.beginPath();
-    if (door.y < 100) {
-      // Arrow pointing up
+
+    if (door.x < 100) {
+      // Left wall door: Arrow pointing LEFT (<--)
+      const arrowX = door.x + 22 - pulse;
+      const arrowY = door.y + door.h / 2;
+      ctx.moveTo(arrowX, arrowY);
+      ctx.lineTo(arrowX + 16, arrowY - 12);
+      ctx.lineTo(arrowX + 16, arrowY + 12);
+    } else if (door.x > 900) {
+      // Right wall door: Arrow pointing RIGHT (-->)
+      const arrowX = door.x + door.w - 22 + pulse;
+      const arrowY = door.y + door.h / 2;
+      ctx.moveTo(arrowX, arrowY);
+      ctx.lineTo(arrowX - 16, arrowY - 12);
+      ctx.lineTo(arrowX - 16, arrowY + 12);
+    } else if (door.y < 100) {
+      // Top wall door: Arrow pointing UP
       ctx.moveTo(door.x + door.w / 2, door.y + 10 - pulse);
       ctx.lineTo(door.x + door.w / 2 - 14, door.y + 26 - pulse);
       ctx.lineTo(door.x + door.w / 2 + 14, door.y + 26 - pulse);
     } else {
-      // Arrow pointing down
+      // Bottom door: Arrow pointing DOWN
       ctx.moveTo(door.x + door.w / 2, door.y + door.h - 10 + pulse);
       ctx.lineTo(door.x + door.w / 2 - 14, door.y + door.h - 26 + pulse);
       ctx.lineTo(door.x + door.w / 2 + 14, door.y + door.h - 26 + pulse);
