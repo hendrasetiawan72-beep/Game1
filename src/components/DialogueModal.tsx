@@ -11,12 +11,26 @@ interface DialogueModalProps {
 }
 
 export const getSpeakerGender = (speaker: string = '', avatarType: string = ''): 'male' | 'female' => {
-  const femaleKeywords = ['siti', 'tari', 'rini', 'nina', 'maya', 'ibu', 'bu '];
-  const femaleAvatars = ['canteen', 'girl_student', 'teacher_bu_rini', 'teacher_bu_nina', 'girl_hijab', 'girl_nohijab'];
   const lowerSpeaker = speaker.toLowerCase();
-  if (femaleKeywords.some(kw => lowerSpeaker.includes(kw)) || femaleAvatars.includes(avatarType)) {
+  const lowerAvatar = avatarType.toLowerCase();
+
+  // Explicit female identifiers
+  if (
+    lowerSpeaker.includes('siti') ||
+    lowerSpeaker.includes('tari') ||
+    lowerSpeaker.includes('rini') ||
+    lowerSpeaker.includes('nina') ||
+    lowerSpeaker.includes('maya') ||
+    lowerSpeaker.includes('ibu') ||
+    lowerSpeaker.includes('bu ') ||
+    lowerAvatar.includes('canteen') ||
+    lowerAvatar.includes('girl') ||
+    lowerAvatar.includes('rini') ||
+    lowerAvatar.includes('nina')
+  ) {
     return 'female';
   }
+
   return 'male';
 };
 
@@ -27,9 +41,10 @@ export const DialogueModal: React.FC<DialogueModalProps> = ({
   trustMeter
 }) => {
   const [selectedChoice, setSelectedChoice] = useState<DialogueChoice | null>(null);
-  // Cooldown prevention: prevents accidental automatic clicks/taps when dialogue modal mounts
+  // Strict event dampening: prevents accidental clicks/taps when dialogue modal mounts
   const [canSelect, setCanSelect] = useState<boolean>(false);
   const [canContinue, setCanContinue] = useState<boolean>(false);
+  const mountTimeRef = React.useRef<number>(Date.now());
 
   const speakerGender = getSpeakerGender(node.speaker, node.avatarType);
 
@@ -38,25 +53,26 @@ export const DialogueModal: React.FC<DialogueModalProps> = ({
     setSelectedChoice(null);
     setCanSelect(false);
     setCanContinue(false);
+    mountTimeRef.current = Date.now();
 
     // Initial talk blip with character's gender pitch
     sound.playTalkBlip(speakerGender, node.text.length);
 
-    // 400ms buffer before buttons register clicks to prevent touch/click-through from action button
+    // 750ms buffer before buttons register clicks to prevent touch/click-through from moving or canvas taps
     const selectTimer = setTimeout(() => {
       setCanSelect(true);
-    }, 400);
+    }, 750);
 
     return () => clearTimeout(selectTimer);
   }, [node.id, speakerGender, node.text]);
 
   useEffect(() => {
     if (selectedChoice) {
-      // 450ms buffer before user can continue so feedback is read and not skipped accidentally
+      // 700ms buffer before user can continue so feedback is read and not skipped accidentally
       setCanContinue(false);
       const continueTimer = setTimeout(() => {
         setCanContinue(true);
-      }, 450);
+      }, 700);
       return () => clearTimeout(continueTimer);
     }
   }, [selectedChoice]);
@@ -64,7 +80,10 @@ export const DialogueModal: React.FC<DialogueModalProps> = ({
   const handleSelect = (e: React.MouseEvent | React.TouchEvent, choice: DialogueChoice) => {
     e.preventDefault();
     e.stopPropagation();
+
+    // Safety checks against auto-press bug
     if (!canSelect || selectedChoice) return;
+    if (Date.now() - mountTimeRef.current < 700) return;
 
     setSelectedChoice(choice);
     if (choice.isCorrect) {
@@ -86,11 +105,11 @@ export const DialogueModal: React.FC<DialogueModalProps> = ({
   return (
     <div
       onClick={e => e.stopPropagation()}
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-2 sm:p-4 bg-black/55 backdrop-blur-xs select-none"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-2 sm:p-4 bg-black/60 backdrop-blur-xs select-none"
     >
       <div
         onClick={e => e.stopPropagation()}
-        className="w-full max-w-xl bg-[#FFFDF9] border-3 border-[#4A4A5E] rounded-3xl p-3.5 sm:p-5 shadow-2xl flex flex-col space-y-3 max-h-[82vh] overflow-y-auto animate-in fade-in slide-in-from-bottom-4 duration-200"
+        className="w-full max-w-xl bg-[#FFFDF9] border-3 border-[#4A4A5E] rounded-3xl p-3.5 sm:p-5 shadow-2xl flex flex-col space-y-3 max-h-[85vh] overflow-y-auto animate-in fade-in slide-in-from-bottom-4 duration-200"
       >
         {/* Speaker Info Header */}
         <div className="flex items-center justify-between border-b-2 border-[#BFDDF5] pb-2">
@@ -128,15 +147,16 @@ export const DialogueModal: React.FC<DialogueModalProps> = ({
 
           <div className="flex items-center gap-1 shrink-0">
             <button
+              type="button"
               onClick={e => {
                 e.stopPropagation();
                 sound.speakPhrase(node.text, speakerGender);
               }}
-              className="p-1.5 rounded-xl bg-[#FFFBF5] border border-[#4A4A5E]/30 hover:bg-[#BFDDF5] text-[#4A4A5E] transition-all flex items-center gap-1 active:scale-95"
-              title={`Pronounce dialogue in English (${speakerGender} voice)`}
+              className="px-2.5 py-1.5 rounded-xl bg-[#FFFBF5] border-2 border-[#4A4A5E]/40 hover:bg-[#BFDDF5] text-[#4A4A5E] transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer shadow-xs"
+              title={`Listen to ${node.speaker} speaking in English (${speakerGender} voice)`}
             >
-              <Volume2 size={16} />
-              <span className="text-[10px] font-bold hidden sm:inline">Listen</span>
+              <Volume2 size={16} className={speakerGender === 'female' ? 'text-rose-600' : 'text-blue-600'} />
+              <span className="text-xs font-black">Listen</span>
             </button>
           </div>
         </div>
@@ -150,26 +170,27 @@ export const DialogueModal: React.FC<DialogueModalProps> = ({
 
         {/* Choices / Feedback */}
         {!selectedChoice ? (
-          <div className="space-y-2 pt-0.5">
+          <div className={`space-y-2 pt-0.5 ${!canSelect ? 'pointer-events-none select-none' : ''}`}>
             <div className="flex items-center justify-between">
               <p className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-[#7A7A8E]">
                 Choose Your Response:
               </p>
               {!canSelect && (
-                <span className="text-[10px] font-bold text-amber-600 animate-pulse">
-                  Listening...
-                </span>
+                <div className="flex items-center gap-1 text-[10px] font-extrabold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200 animate-pulse">
+                  <span>🎧 Listening to {node.speaker.split(' ')[0]}...</span>
+                </div>
               )}
             </div>
 
             {node.choices.map((choice, idx) => (
               <button
                 key={idx}
+                type="button"
                 disabled={!canSelect}
                 onClick={e => handleSelect(e, choice)}
                 className={`w-full p-2.5 sm:p-3 rounded-2xl border-2 border-[#4A4A5E] text-left transition-all shadow-xs group ${
                   !canSelect
-                    ? 'opacity-85 bg-gray-50 cursor-default'
+                    ? 'opacity-65 bg-gray-100 cursor-not-allowed pointer-events-none'
                     : 'bg-white hover:bg-[#FFF9E6] active:scale-[0.98] cursor-pointer'
                 }`}
               >
@@ -228,11 +249,12 @@ export const DialogueModal: React.FC<DialogueModalProps> = ({
             </div>
 
             <button
+              type="button"
               disabled={!canContinue}
               onClick={handleContinue}
               className={`w-full py-2.5 sm:py-3 rounded-full text-[#4A4A5E] font-black text-xs sm:text-sm border-2 border-[#4A4A5E] shadow-sm flex items-center justify-center gap-1.5 transition-all ${
                 !canContinue
-                  ? 'opacity-70 bg-gray-200 cursor-default'
+                  ? 'opacity-65 bg-gray-200 cursor-not-allowed pointer-events-none'
                   : 'bg-[#BFE8D6] hover:bg-[#A3E4D7] active:scale-95 cursor-pointer'
               }`}
             >

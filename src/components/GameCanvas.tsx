@@ -13,7 +13,7 @@ interface GameCanvasProps {
   onEnterDoor: (targetZone: ZoneId, targetX: number, targetY: number) => void;
   onTriggerMinigame: (type: 'akl' | 'otomotif' | 'tjkt') => void;
   onInspectObject: (msg: string, clueId?: string, label?: string) => void;
-  virtualDirection: { x: number; y: number } | null;
+  virtualDirection?: { x: number; y: number } | null;
   onRegisterInteractTrigger?: (triggerFn: () => void) => void;
   setNearbyInteractable: (has: boolean) => void;
   isPaused?: boolean;
@@ -27,7 +27,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   onEnterDoor,
   onTriggerMinigame,
   onInspectObject,
-  virtualDirection,
+  virtualDirection = null,
   onRegisterInteractTrigger,
   setNearbyInteractable,
   isPaused = false
@@ -35,6 +35,9 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const keysDown = useRef<Record<string, boolean>>({});
   const clickTarget = useRef<{ x: number; y: number } | null>(null);
+  const touchStartRef = useRef<{ clientX: number; clientY: number; time: number } | null>(null);
+  const touchMoveDir = useRef<{ vx: number; vy: number } | null>(null);
+  const flickImpulse = useRef<{ vx: number; vy: number; ticks: number } | null>(null);
   const timeTickRef = useRef<number>(0);
   const playerRef = useRef<PlayerState>(player);
   const lastDoorTriggerTime = useRef<number>(0);
@@ -255,9 +258,23 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       if (k['KeyA'] || k['ArrowLeft']) vx -= 1;
       if (k['KeyD'] || k['ArrowRight']) vx += 1;
 
-      if (virtualDirection) {
+      // Continuous touch drag on screen
+      if (touchMoveDir.current) {
+        vx = touchMoveDir.current.vx;
+        vy = touchMoveDir.current.vy;
+      } else if (virtualDirection) {
         vx = virtualDirection.x;
         vy = virtualDirection.y;
+      }
+
+      // Jentik layar / flick impulse gesture
+      if (flickImpulse.current && flickImpulse.current.ticks > 0) {
+        vx = flickImpulse.current.vx * 1.7;
+        vy = flickImpulse.current.vy * 1.7;
+        flickImpulse.current.ticks -= 1;
+        if (flickImpulse.current.ticks <= 0) {
+          flickImpulse.current = null;
+        }
       }
 
       if (clickTarget.current) {
@@ -445,83 +462,188 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     gameState.currentChapter
   ]);
 
-  // Handle canvas click/tap to walk or interact
-  const handlePointerDown = (clientX: number, clientY: number) => {
+  // Handle touch and flick pointer events for mobile touch screen & desktop mouse
+  const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    try {
+      (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    } catch {
+      // safe fallback if pointer capture unsupported
+    }
+    touchStartRef.current = {
+      clientX: e.clientX,
+      clientY: e.clientY,
+      time: Date.now()
+    };
+    touchMoveDir.current = null;
+    flickImpulse.current = null;
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    if (!touchStartRef.current) return;
+    const dx = e.clientX - touchStartRef.current.clientX;
+    const dy = e.clientY - touchStartRef.current.clientY;
+    const dist = Math.hypot(dx, dy);
+
+    // If dragging/swiping finger continuously across the screen, move smoothly with finger
+    if (dist > 16) {
+      touchMoveDir.current = { vx: dx / dist, vy: dy / dist };
+      clickTarget.current = null;
+    }
+  };
+
+  const handlePointerUp = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    if (!touchStartRef.current) return;
+
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas) {
+      touchStartRef.current = null;
+      return;
+    }
     const rect = canvas.getBoundingClientRect();
     const p = playerRef.current;
     const curZone = MAP_ZONES[p.zone];
-    if (!curZone) return;
+    if (!curZone) {
+      touchStartRef.current = null;
+      return;
+    }
 
-    let camX = p.x - rect.width / 2;
-    let camY = p.y - rect.height / 2;
-    camX = Math.max(0, Math.min(camX, curZone.width - rect.width));
-    camY = Math.max(0, Math.min(camY, curZone.height - rect.height));
+    const dt = Date.now() - touchStartRef.current.time;
+    const dx = e.clientX - touchStartRef.current.clientX;
+    const dy = e.clientY - touchStartRef.current.clientY;
+    const dist = Math.hypot(dx, dy);
 
-    const clickX = clientX - rect.left + camX;
-    const clickY = clientY - rect.top + camY;
+    touchMoveDir.current = null;
 
-    // 1. If clicked near a door or bottom exit doorway in a lab, enter immediately if within range
-    for (const door of curZone.doors) {
-      if (
-        clickX >= door.x - 40 &&
-        clickX <= door.x + door.w + 40 &&
-        clickY >= door.y - 40 &&
-        clickY <= door.y + door.h + 40
-      ) {
-        const dist = Math.hypot(door.x + door.w / 2 - p.x, door.y + door.h / 2 - p.y);
-        if (dist < 180 || (p.zone !== 'courtyard' && p.y >= 450)) {
+    // 1. JENTIK LAYAR / FLICK GESTURE
+    // A quick, energetic swipe on screen gives an instant momentum impulse in that direction!
+    if (dt < 320 && dist > 25) {
+      flickImpulse.current = {
+        vx: dx / dist,
+        vy: dy / dist,
+        ticks: 15
+      };
+      clickTarget.current = null;
+      sound.playStep();
+      touchStartRef.current = null;
+      return;
+    }
+
+    // 2. TAP GESTURE (Small movement or single tap)
+    if (dist < 22) {
+      let camX = p.x - rect.width / 2;
+      let camY = p.y - rect.height / 2;
+      camX = Math.max(0, Math.min(camX, curZone.width - rect.width));
+      camY = Math.max(0, Math.min(camY, curZone.height - rect.height));
+
+      const clickX = e.clientX - rect.left + camX;
+      const clickY = e.clientY - rect.top + camY;
+
+      // 1. Check doors
+      for (const door of curZone.doors) {
+        if (
+          clickX >= door.x - 40 &&
+          clickX <= door.x + door.w + 40 &&
+          clickY >= door.y - 40 &&
+          clickY <= door.y + door.h + 40
+        ) {
+          const distToDoor = Math.hypot(door.x + door.w / 2 - p.x, door.y + door.h / 2 - p.y);
+          if (distToDoor < 180 || (p.zone !== 'courtyard' && (p.x <= 90 || p.x >= 810 || p.y >= 450))) {
+            sound.playSparkle();
+            clickTarget.current = null;
+            onEnterDoor(door.targetZone, door.targetX, door.targetY);
+            touchStartRef.current = null;
+            return;
+          }
+          clickTarget.current = { x: door.x + door.w / 2, y: door.y + door.h / 2 };
+          touchStartRef.current = null;
+          return;
+        }
+      }
+
+      // Direct lab exit click: clicking bottom doorway in a lab
+      if (p.zone !== 'courtyard' && clickY >= 520 && clickX >= 300 && clickX <= 600) {
+        const exitDoor = curZone.doors[0];
+        if (exitDoor) {
           sound.playSparkle();
           clickTarget.current = null;
-          onEnterDoor(door.targetZone, door.targetX, door.targetY);
+          onEnterDoor(exitDoor.targetZone, exitDoor.targetX, exitDoor.targetY);
+          touchStartRef.current = null;
           return;
         }
-        clickTarget.current = { x: door.x + door.w / 2, y: door.y + door.h / 2 };
-        return;
       }
-    }
 
-    // Direct lab exit click: clicking bottom area of lab
-    if (p.zone !== 'courtyard' && clickY >= 520 && clickX >= 300 && clickX <= 600) {
-      const exitDoor = curZone.doors[0];
-      if (exitDoor) {
-        sound.playSparkle();
-        clickTarget.current = null;
-        onEnterDoor(exitDoor.targetZone, exitDoor.targetX, exitDoor.targetY);
-        return;
-      }
-    }
-
-    // 2. If clicked near an NPC, talk if close or walk to them
-    for (const npc of activeNPCs) {
-      const dist = Math.hypot(npc.x - clickX, npc.y - clickY);
-      if (dist < 55) {
-        const distToPlayer = Math.hypot(npc.x - p.x, npc.y - p.y);
-        if (distToPlayer < 95) {
-          sound.playClick();
-          onTalkToNPC(npc);
+      // 2. Check NPCs (triggered strictly on pointer up so touch has ended!)
+      for (const npc of activeNPCs) {
+        const distToNpc = Math.hypot(npc.x - clickX, npc.y - clickY);
+        if (distToNpc < 55) {
+          const distToPlayer = Math.hypot(npc.x - p.x, npc.y - p.y);
+          if (distToPlayer < 95) {
+            sound.playClick();
+            onTalkToNPC(npc);
+            touchStartRef.current = null;
+            return;
+          }
+          clickTarget.current = { x: npc.x, y: npc.y };
+          touchStartRef.current = null;
           return;
         }
-        clickTarget.current = { x: npc.x, y: npc.y };
-        return;
       }
+
+      // 3. Check objects
+      for (const obj of curZone.objects) {
+        if (
+          clickX >= obj.x - 20 &&
+          clickX <= obj.x + obj.w + 20 &&
+          clickY >= obj.y - 20 &&
+          clickY <= obj.y + obj.h + 20
+        ) {
+          const distToObj = Math.hypot(obj.x + obj.w / 2 - p.x, obj.y + obj.h / 2 - p.y);
+          if (distToObj < 95) {
+            sound.playClick();
+            if (obj.type === 'minigame_station') {
+              if (p.zone === 'akl') onTriggerMinigame('akl');
+              else if (p.zone === 'otomotif') onTriggerMinigame('otomotif');
+              else if (p.zone === 'tjkt') onTriggerMinigame('tjkt');
+            } else if (obj.inspectMessage) {
+              onInspectObject(obj.inspectMessage, obj.unlockClueId, obj.label);
+            }
+            touchStartRef.current = null;
+            return;
+          }
+          clickTarget.current = { x: obj.x + obj.w / 2, y: obj.y + obj.h / 2 };
+          touchStartRef.current = null;
+          return;
+        }
+      }
+
+      // 4. Default: set waypoint to walk toward
+      clickTarget.current = { x: clickX, y: clickY };
     }
 
-    // 3. General waypoint navigation
-    clickTarget.current = { x: clickX, y: clickY };
+    touchStartRef.current = null;
+  };
+
+  const handlePointerCancel = () => {
+    touchStartRef.current = null;
+    touchMoveDir.current = null;
+    flickImpulse.current = null;
   };
 
   return (
-    <div className="w-full h-full relative overflow-hidden bg-[#FFFBF5]">
+    <div
+      className="w-full h-full relative overflow-hidden bg-[#FFFBF5]"
+      style={{
+        backgroundImage: 'url(https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhSbn8VvgDB_HZ-RfHFLJ6cm94IUJBXb2dPeFIOc8Q9F1fw826C9ui7G2q2ArRV_wLhkqHrFYHVuWnO9lwDkt5B67xxQEhyphenhyphenZmKrLhp4adzFBElL-9naX0Y_8JbC4YhAZbYywZdN5q6h32lCAMv931_lGJygObpkP4xFeiQFl1EEd_UpSJIRl-eUpq1s5O8N/s506/50562.png)',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center'
+      }}
+    >
       <canvas
         ref={canvasRef}
-        onClick={(e) => handlePointerDown(e.clientX, e.clientY)}
-        onTouchStart={(e) => {
-          if (e.touches.length > 0) {
-            handlePointerDown(e.touches[0].clientX, e.touches[0].clientY);
-          }
-        }}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerCancel}
         className="w-full h-full block cursor-crosshair touch-none select-none"
       />
     </div>

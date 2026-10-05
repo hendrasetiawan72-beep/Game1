@@ -9,6 +9,7 @@ interface VictoryModalProps {
   studentClass: string;
   major: string;
   elapsedSeconds: number;
+  isFailed?: boolean;
   onPlayAgain: () => void;
 }
 
@@ -18,6 +19,7 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
   studentClass,
   major,
   elapsedSeconds,
+  isFailed = false,
   onPlayAgain
 }) => {
   const [hasSentSuccessfully, setHasSentSuccessfully] = useState<boolean>(false);
@@ -80,31 +82,39 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-black/65 backdrop-blur-xs overflow-y-auto select-none">
       <div className="w-full max-w-xl bg-[#FFFDF9] border-4 border-[#4A4A5E] rounded-3xl p-4 sm:p-6 shadow-2xl flex flex-col space-y-4 my-auto text-center animate-in zoom-in-95 duration-300 max-h-[95vh] overflow-y-auto">
-        {/* Banner & Golden Trophy */}
+        {/* Banner & Golden Trophy / Record Emblem */}
         <div className="space-y-1.5">
           <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-[#FFF1B8] border-2 border-[#4A4A5E] text-[11px] font-black text-[#4A4A5E] shadow-xs">
             <Award size={13} className="text-amber-600" />
             <span>25th Silver Jubilee • SMK Muhammadiyah Bawang</span>
           </div>
 
-          <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto rounded-3xl bg-gradient-to-br from-[#FFF1B8] to-[#FFD9C7] border-3 border-[#4A4A5E] flex items-center justify-center shadow-md animate-bounce">
-            <Trophy size={36} className="text-amber-500 fill-amber-400 drop-shadow-xs" />
+          <div className={`w-16 h-16 sm:w-20 sm:h-20 mx-auto rounded-3xl border-3 border-[#4A4A5E] flex items-center justify-center shadow-md animate-bounce ${
+            isFailed ? 'bg-gradient-to-br from-[#FFD9C7] to-[#FFF1B8]' : 'bg-gradient-to-br from-[#FFF1B8] to-[#FFD9C7]'
+          }`}>
+            {isFailed ? (
+              <Award size={36} className="text-amber-600 drop-shadow-xs" />
+            ) : (
+              <Trophy size={36} className="text-amber-500 fill-amber-400 drop-shadow-xs" />
+            )}
           </div>
 
           <h1 className="text-xl sm:text-2xl font-black text-[#4A4A5E] font-['Nunito'] tracking-tight">
-            The Golden Mystery Revealed!
+            {isFailed ? 'Investigasi Berakhir • Nilai Akhir Direkam' : 'The Golden Mystery Revealed!'}
           </h1>
           <p className="text-xs text-[#7A7A8E] max-w-md mx-auto leading-relaxed">
-            Senior Rafi secretly restored the Golden Trophy with 25th anniversary laurels as an authorized surprise gift! Polite dialogue solved the mystery!
+            {isFailed
+              ? 'Semua saksi telah diwawancarai, namun kartu petunjuk belum lengkap untuk membuka assessment berikutnya. Permainan otomatis berakhir dan rekaman nilai akhir Anda telah disimpan.'
+              : 'Senior Rafi secretly restored the Golden Trophy with 25th anniversary laurels as an authorized surprise gift! Polite dialogue solved the mystery!'}
           </p>
         </div>
 
-        {/* Award Certificate */}
+        {/* Award Certificate / Official Record */}
         <div className="p-3.5 sm:p-4 rounded-3xl bg-gradient-to-br from-[#BFE8D6]/40 via-[#BFDDF5]/40 to-[#DCCFF0]/40 border-2 border-[#4A4A5E] space-y-1.5 shadow-inner">
           <div className="flex items-center justify-center gap-1.5">
             <Award size={18} className="text-[#27AE60]" />
             <span className="text-[11px] font-black uppercase tracking-wider text-[#4A4A5E]">
-              Official Award Certificate
+              {isFailed ? 'Official Investigation Record' : 'Official Award Certificate'}
             </span>
           </div>
 
@@ -118,7 +128,7 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
           </div>
 
           <div className="inline-block px-3 py-0.5 rounded-full bg-[#FFF1B8] border border-[#4A4A5E] font-black text-[11px] text-[#4A4A5E]">
-            🏅 BEST COMMUNICATOR BADGE OF HONOR
+            {isFailed ? '📊 FINAL SCORE RECORDED • REKAMAN RESMI' : '🏅 BEST COMMUNICATOR BADGE OF HONOR'}
           </div>
 
           <p className="text-[10px] sm:text-[11px] text-[#555566] italic max-w-sm mx-auto leading-relaxed">

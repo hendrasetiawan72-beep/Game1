@@ -7,18 +7,6 @@ interface CharacterSelectProps {
   onStart: (name: string, studentClass: string, avatar: AvatarType, major: MajorType) => void;
 }
 
-const CLASS_SUGGESTIONS = [
-  'X AKL 1',
-  'X AKL 2',
-  'X Otomotif 1',
-  'X Otomotif 2',
-  'X TJKT 1',
-  'X TJKT 2',
-  'XI AKL',
-  'XI Otomotif',
-  'XI TJKT'
-];
-
 export const CharacterSelect: React.FC<CharacterSelectProps> = ({ onStart }) => {
   const [name, setName] = useState<string>('Rizky');
   const [studentClass, setStudentClass] = useState<string>('X AKL 1');
@@ -54,7 +42,7 @@ export const CharacterSelect: React.FC<CharacterSelectProps> = ({ onStart }) => 
             {/* Student Name */}
             <div>
               <label className="block text-[10px] sm:text-xs font-black uppercase tracking-wider text-[#4A4A5E] mb-1">
-                1. Student Name
+                1. Student Name (Nama Siswa)
               </label>
               <input
                 type="text"
@@ -67,47 +55,20 @@ export const CharacterSelect: React.FC<CharacterSelectProps> = ({ onStart }) => 
               />
             </div>
 
-            {/* Student Class / Grade */}
+            {/* Student Class / Grade (Manual entry) */}
             <div>
               <label className="block text-[10px] sm:text-xs font-black uppercase tracking-wider text-[#4A4A5E] mb-1">
-                2. Class / Grade (Kelas)
+                2. Class / Grade (Isi Kelas Manual)
               </label>
               <input
                 type="text"
                 value={studentClass}
                 onChange={e => setStudentClass(e.target.value)}
-                placeholder="e.g. X AKL 1, XI TKR 2..."
-                maxLength={15}
+                placeholder="Contoh: X AKL 1, XI TO 2, XII TJKT..."
+                maxLength={20}
                 className="w-full px-3.5 py-2 rounded-2xl bg-white border-2 border-[#4A4A5E] text-[#4A4A5E] font-bold text-xs sm:text-sm focus:outline-hidden focus:border-[#5DADE2] shadow-inner"
                 required
               />
-            </div>
-          </div>
-
-          {/* Quick Class Selection Pills */}
-          <div>
-            <div className="flex items-center gap-1 text-[10px] text-[#7A7A8E] font-bold mb-1">
-              <GraduationCap size={12} />
-              <span>Quick Class Select:</span>
-            </div>
-            <div className="flex flex-wrap gap-1">
-              {CLASS_SUGGESTIONS.map(cls => (
-                <button
-                  key={cls}
-                  type="button"
-                  onClick={() => {
-                    sound.playClick();
-                    setStudentClass(cls);
-                  }}
-                  className={`px-2 py-0.5 rounded-lg text-[10px] font-bold border transition-all ${
-                    studentClass === cls
-                      ? 'bg-[#4A4A5E] text-white border-[#4A4A5E]'
-                      : 'bg-white text-[#7A7A8E] border-gray-300 hover:border-[#4A4A5E]'
-                  }`}
-                >
-                  {cls}
-                </button>
-              ))}
             </div>
           </div>
 

@@ -19,7 +19,6 @@ import {
 import { DIALOGUE_NODES } from './data/story';
 import { GameCanvas } from './components/GameCanvas';
 import { HUD } from './components/HUD';
-import { VirtualControls } from './components/VirtualControls';
 import { DialogueModal } from './components/DialogueModal';
 import { PhraseBankModal } from './components/PhraseBankModal';
 import { InventoryModal } from './components/InventoryModal';
@@ -145,10 +144,6 @@ export default function App() {
   const [showVictory, setShowVictory] = useState<boolean>(false);
   const [inspectData, setInspectData] = useState<InspectData | null>(null);
   const [isNearbyInteractable, setIsNearbyInteractable] = useState<boolean>(false);
-
-  // Virtual Controls Direction & Trigger Ref
-  const [virtualDirection, setVirtualDirection] = useState<{ x: number; y: number } | null>(null);
-  const interactTriggerRef = useRef<(() => void) | null>(null);
 
   // Determine if any modal is currently active to prevent navigation collision
   const isAnyModalActive =
@@ -454,44 +449,71 @@ export default function App() {
 
   const dayCompletion = checkDayCompletion(gameState, player.major);
 
-  // Auto-launch Quiz when all conversations and required clues for current day are completed
+  // Banner when all required clue cards are unlocked - directly clickable to open quiz
   useEffect(() => {
     if (!hasStarted || gameState.gameCompleted) return;
     const ch = gameState.currentChapter;
-    if (gameState.completedQuizzes[ch]) return;
+    if (gameState.completedQuizzes[ch]) {
+      setShowAutoQuizBanner(false);
+      return;
+    }
 
-    if (
-      dayCompletion.isComplete &&
-      !showQuiz &&
-      !showChapterEnd &&
-      !showVictory &&
-      !activeDialogueNode &&
-      !inspectData &&
-      !activeMinigame &&
-      autoQuizTriggeredForChapter !== ch
-    ) {
-      setAutoQuizTriggeredForChapter(ch);
-      sound.playFanfare();
-      setShowAutoQuizBanner(true);
-      const timer = setTimeout(() => {
-        setShowAutoQuizBanner(false);
-        setShowQuiz(true);
-      }, 1200);
-      return () => clearTimeout(timer);
+    if (dayCompletion.hasEnoughClues && !showQuiz && !showChapterEnd && !showVictory) {
+      if (autoQuizTriggeredForChapter !== ch) {
+        setAutoQuizTriggeredForChapter(ch);
+        sound.playFanfare();
+        setShowAutoQuizBanner(true);
+      }
+    } else {
+      setShowAutoQuizBanner(false);
     }
   }, [
     hasStarted,
     gameState.completedQuizzes,
     gameState.currentChapter,
     gameState.gameCompleted,
-    dayCompletion.isComplete,
+    dayCompletion.hasEnoughClues,
     showQuiz,
     showChapterEnd,
     showVictory,
+    autoQuizTriggeredForChapter
+  ]);
+
+  // Fail-safe: if all witnesses are interviewed but required clues were not collected,
+  // automatically stop the game and record final score!
+  useEffect(() => {
+    if (
+      !hasStarted ||
+      gameState.gameCompleted ||
+      showVictory ||
+      showQuiz ||
+      showChapterEnd ||
+      activeDialogueNode ||
+      inspectData ||
+      activeMinigame
+    ) {
+      return;
+    }
+
+    if (dayCompletion.hasCompletedAllConversations && !dayCompletion.hasEnoughClues) {
+      sound.playWrong();
+      setGameState(prev => ({
+        ...prev,
+        gameCompleted: true
+      }));
+      setShowVictory(true);
+    }
+  }, [
+    hasStarted,
+    gameState.gameCompleted,
+    showVictory,
+    showQuiz,
+    showChapterEnd,
     activeDialogueNode,
     inspectData,
     activeMinigame,
-    autoQuizTriggeredForChapter
+    dayCompletion.hasCompletedAllConversations,
+    dayCompletion.hasEnoughClues
   ]);
 
   // Open Quiz handler with Clue & Interview Gating:
@@ -590,7 +612,7 @@ export default function App() {
         <CharacterSelect onStart={handleStartGame} />
       ) : (
         <>
-          {/* Top HUD with Timer, Clue Gated Quiz, Daily Mission, and Exit Button */}
+          {/* Top HUD with Timer, Clue Gated Quiz, Daily Mission, and Submerging on Movement */}
           <HUD
             gameState={gameState}
             currentZone={player.zone}
@@ -602,6 +624,7 @@ export default function App() {
             isQuizUnlocked={dayCompletion.isComplete}
             answeredConversationsCount={dayCompletion.answeredCount}
             totalConversationsCount={dayCompletion.totalConversations}
+            isMoving={player.isMoving}
             onExitToCourtyard={handleExitToCourtyard}
             onOpenPhraseBank={() => setShowPhraseBank(true)}
             onOpenInventory={() => setShowInventory(true)}
@@ -610,15 +633,29 @@ export default function App() {
             onRestart={handleRestart}
           />
 
-          {/* Celebratory Auto-Launch Banner */}
+          {/* Celebratory Quiz Ready Banner - Can be directly clicked/tapped to open Quiz */}
           {showAutoQuizBanner && (
-            <div className="fixed top-14 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 border-2 border-white text-white font-black text-xs sm:text-sm shadow-2xl flex items-center gap-2 animate-in slide-in-from-top-4 duration-300">
-              <span className="text-base">🎉</span>
-              <span>All Day {gameState.currentChapter} evidence & interviews completed! Opening Quiz...</span>
+            <div
+              onClick={() => {
+                sound.playFanfare();
+                setShowAutoQuizBanner(false);
+                setShowQuiz(true);
+              }}
+              className="fixed top-16 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 border-2 border-white text-white font-black text-xs sm:text-sm shadow-2xl flex items-center gap-2.5 cursor-pointer hover:scale-105 active:scale-95 transition-all animate-bounce"
+            >
+              <span className="text-xl">🎉</span>
+              <div className="text-left">
+                <div className="text-[10px] uppercase tracking-wider text-emerald-200 font-extrabold">
+                  Semua Kartu Terbuka!
+                </div>
+                <div className="font-black text-white text-xs sm:text-sm">
+                  Tekan di sini untuk buka Quiz Day {gameState.currentChapter} & lanjut ke hari selanjutnya →
+                </div>
+              </div>
             </div>
           )}
 
-          {/* 60fps Game Canvas */}
+          {/* 60fps Game Canvas with Touch & Flick Navigation */}
           <GameCanvas
             player={player}
             onUpdatePlayer={update => setPlayer(prev => ({ ...prev, ...update }))}
@@ -627,26 +664,8 @@ export default function App() {
             onEnterDoor={handleEnterDoor}
             onTriggerMinigame={handleTriggerMinigame}
             onInspectObject={(msg, clueId, label) => handleInspectObject(msg, clueId, label)}
-            virtualDirection={virtualDirection}
-            onRegisterInteractTrigger={trigger => {
-              interactTriggerRef.current = trigger;
-            }}
             setNearbyInteractable={setIsNearbyInteractable}
             isPaused={isAnyModalActive}
-          />
-
-          {/* Mobile-First Virtual Controls (Elevated floating position) */}
-          <VirtualControls
-            onDirectionChange={dir => setVirtualDirection(dir)}
-            onInteract={() => {
-              if (interactTriggerRef.current) {
-                interactTriggerRef.current();
-              }
-            }}
-            isNearbyInteractable={isNearbyInteractable}
-            isVisible={!isAnyModalActive}
-            currentZone={player.zone}
-            onExitToCourtyard={handleExitToCourtyard}
           />
 
           {/* Modals & Popups */}
@@ -785,6 +804,7 @@ export default function App() {
               studentClass={player.studentClass}
               major={player.major}
               elapsedSeconds={gameState.elapsedSeconds || 0}
+              isFailed={dayCompletion.hasCompletedAllConversations && !dayCompletion.hasEnoughClues}
               onPlayAgain={() => {
                 localStorage.removeItem(STORAGE_KEY);
                 setGameState(INITIAL_GAME_STATE);

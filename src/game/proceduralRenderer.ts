@@ -1,6 +1,15 @@
 import { AvatarType, NPCData, PlayerState, ZoneId } from '../types/game';
 import { MAP_ZONES } from './mapData';
 
+const INGAME_BG_IMAGE_URL = 'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhSbn8VvgDB_HZ-RfHFLJ6cm94IUJBXb2dPeFIOc8Q9F1fw826C9ui7G2q2ArRV_wLhkqHrFYHVuWnO9lwDkt5B67xxQEhyphenhyphenZmKrLhp4adzFBElL-9naX0Y_8JbC4YhAZbYywZdN5q6h32lCAMv931_lGJygObpkP4xFeiQFl1EEd_UpSJIRl-eUpq1s5O8N/s506/50562.png';
+
+let inGameBgImage: HTMLImageElement | null = null;
+if (typeof window !== 'undefined') {
+  inGameBgImage = new Image();
+  inGameBgImage.crossOrigin = 'anonymous';
+  inGameBgImage.src = INGAME_BG_IMAGE_URL;
+}
+
 export class ProceduralRenderer {
   // Soft drop shadow
   public static drawShadow(ctx: CanvasRenderingContext2D, x: number, y: number, radiusX: number, radiusY: number) {
@@ -83,17 +92,27 @@ export class ProceduralRenderer {
     chapter: number,
     timeTick: number
   ) {
-    // Soft manicured grass
-    ctx.fillStyle = '#E4F4E7';
-    ctx.fillRect(40, 50, w - 80, h - 100);
+    // 1. Render in-game background image if loaded
+    if (inGameBgImage && inGameBgImage.complete && inGameBgImage.naturalWidth > 0) {
+      ctx.save();
+      ctx.drawImage(inGameBgImage, 40, 50, w - 80, h - 100);
+      // Soft semi-transparent tint overlay so interactive paths remain crisp and visible
+      ctx.fillStyle = 'rgba(232, 245, 233, 0.35)';
+      ctx.fillRect(40, 50, w - 80, h - 100);
+      ctx.restore();
+    } else {
+      // Soft manicured grass fallback
+      ctx.fillStyle = '#E4F4E7';
+      ctx.fillRect(40, 50, w - 80, h - 100);
 
-    // Subtle grass tufts
-    ctx.fillStyle = '#C8E6C9';
-    for (let gx = 80; gx < w - 80; gx += 110) {
-      for (let gy = 80; gy < h - 80; gy += 100) {
-        ctx.fillRect(gx, gy, 3, 5);
-        ctx.fillRect(gx + 4, gy - 2, 3, 7);
-        ctx.fillRect(gx + 8, gy + 1, 3, 4);
+      // Subtle grass tufts
+      ctx.fillStyle = '#C8E6C9';
+      for (let gx = 80; gx < w - 80; gx += 110) {
+        for (let gy = 80; gy < h - 80; gy += 100) {
+          ctx.fillRect(gx, gy, 3, 5);
+          ctx.fillRect(gx + 4, gy - 2, 3, 7);
+          ctx.fillRect(gx + 8, gy + 1, 3, 4);
+        }
       }
     }
 
@@ -424,6 +443,13 @@ export class ProceduralRenderer {
 
       this.roundRect(ctx, 0, 385, 40, zone.height - 385, 0, zone.wallColor);
       this.roundRect(ctx, 36, 385, 4, zone.height - 385, 0, zone.accentColor);
+    } else if (zone.id === 'akl' || zone.id === 'tjkt') {
+      // Split left wall for exit doorway to Courtyard at y: 250-370
+      this.roundRect(ctx, 0, 0, 40, 250, 0, zone.wallColor);
+      this.roundRect(ctx, 36, 0, 4, 250, 0, zone.accentColor);
+
+      this.roundRect(ctx, 0, 370, 40, zone.height - 370, 0, zone.wallColor);
+      this.roundRect(ctx, 36, 370, 4, zone.height - 370, 0, zone.accentColor);
     } else {
       this.roundRect(ctx, 0, 0, 40, zone.height, 0, zone.wallColor);
       this.roundRect(ctx, 36, 0, 4, zone.height, 0, zone.accentColor);
@@ -440,6 +466,13 @@ export class ProceduralRenderer {
 
       this.roundRect(ctx, zone.width - 40, 405, 40, zone.height - 405, 0, zone.wallColor);
       this.roundRect(ctx, zone.width - 40, 405, 4, zone.height - 405, 0, zone.accentColor);
+    } else if (zone.id === 'otomotif') {
+      // Split right wall for exit doorway to Courtyard at y: 250-370
+      this.roundRect(ctx, zone.width - 40, 0, 40, 250, 0, zone.wallColor);
+      this.roundRect(ctx, zone.width - 40, 0, 4, 250, 0, zone.accentColor);
+
+      this.roundRect(ctx, zone.width - 40, 370, 40, zone.height - 370, 0, zone.wallColor);
+      this.roundRect(ctx, zone.width - 40, 370, 4, zone.height - 370, 0, zone.accentColor);
     } else {
       this.roundRect(ctx, zone.width - 40, 0, 40, zone.height, 0, zone.wallColor);
       this.roundRect(ctx, zone.width - 40, 0, 4, zone.height, 0, zone.accentColor);

@@ -16,6 +16,7 @@ interface HUDProps {
   isQuizUnlocked?: boolean;
   answeredConversationsCount?: number;
   totalConversationsCount?: number;
+  isMoving?: boolean;
   onExitToCourtyard: () => void;
   onOpenPhraseBank: () => void;
   onOpenInventory: () => void;
@@ -35,6 +36,7 @@ export const HUD: React.FC<HUDProps> = ({
   isQuizUnlocked = false,
   answeredConversationsCount = 0,
   totalConversationsCount = 0,
+  isMoving = false,
   onExitToCourtyard,
   onOpenPhraseBank,
   onOpenInventory,
@@ -64,7 +66,11 @@ export const HUD: React.FC<HUDProps> = ({
   };
 
   return (
-    <header className="absolute top-1.5 sm:top-2 inset-x-1.5 sm:inset-x-2 z-30 pointer-events-none select-none">
+    <header
+      className={`absolute top-1.5 sm:top-2 inset-x-1.5 sm:inset-x-2 z-30 pointer-events-none select-none transition-all duration-300 ease-in-out transform ${
+        isMoving ? '-translate-y-28 opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'
+      }`}
+    >
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-1.5 bg-[#FFFDF9]/95 backdrop-blur-md border-2 border-[#4A4A5E] rounded-2xl sm:rounded-3xl p-2 sm:px-4 shadow-md pointer-events-auto">
         {/* Left: Day, Zone Info, Student & Timer */}
         <div className="flex items-center justify-between sm:justify-start gap-2 flex-wrap sm:flex-nowrap">

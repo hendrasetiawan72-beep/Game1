@@ -84,10 +84,9 @@ export const MAP_ZONES: Record<ZoneId, ZoneMapData> = {
       { x: 340, y: 180, w: 90, h: 60 },
       { x: 670, y: 180, w: 90, h: 60 },
       { x: 360, y: 520, w: 100, h: 50 },
-      { x: 640, y: 520, w: 100, h: 50 }
     ],
     doors: [
-      // Sebelah Kiri: Bengkel Otomotif
+      // Sebelah Kiri (Left side of game): Bengkel Otomotif
       {
         id: 'door_to_otomotif',
         name: 'Bengkel Otomotif',
@@ -96,10 +95,10 @@ export const MAP_ZONES: Record<ZoneId, ZoneMapData> = {
         w: 75,
         h: 95,
         targetZone: 'otomotif',
-        targetX: 450,
-        targetY: 480
+        targetX: 740,
+        targetY: 310
       },
-      // Sebelah Kanan: Laboratorium AKL & Laboratorium TJKT
+      // Sebelah Kanan (Right side of game): Laboratorium AKL & Laboratorium TJKT
       {
         id: 'door_to_akl',
         name: 'Laboratorium AKL',
@@ -108,8 +107,8 @@ export const MAP_ZONES: Record<ZoneId, ZoneMapData> = {
         w: 75,
         h: 85,
         targetZone: 'akl',
-        targetX: 450,
-        targetY: 480
+        targetX: 130,
+        targetY: 310
       },
       {
         id: 'door_to_tjkt',
@@ -119,8 +118,8 @@ export const MAP_ZONES: Record<ZoneId, ZoneMapData> = {
         w: 75,
         h: 85,
         targetZone: 'tjkt',
-        targetX: 450,
-        targetY: 480
+        targetX: 130,
+        targetY: 310
       }
     ],
     objects: [
@@ -188,16 +187,29 @@ export const MAP_ZONES: Record<ZoneId, ZoneMapData> = {
       { x: 0, y: 600, w: 320, h: 50 },
       { x: 580, y: 600, w: 320, h: 50 },
 
-      { x: 0, y: 0, w: 40, h: 650 },
+      // Left wall split with doorway for side exit back to Courtyard
+      { x: 0, y: 0, w: 40, h: 250 },
+      { x: 0, y: 370, w: 40, h: 280 },
       { x: 860, y: 0, w: 40, h: 650 },
       { x: 120, y: 160, w: 260, h: 70 },
       { x: 500, y: 160, w: 260, h: 70 },
-      { x: 80, y: 350, w: 100, h: 180 },
+      { x: 80, y: 390, w: 100, h: 140 },
       { x: 300, y: 220, w: 120, h: 60 }
     ],
     doors: [
       {
-        id: 'door_akl_to_courtyard',
+        id: 'door_akl_to_courtyard_left',
+        name: 'Exit to Courtyard',
+        x: 10,
+        y: 260,
+        w: 75,
+        h: 95,
+        targetZone: 'courtyard',
+        targetX: 960,
+        targetY: 205
+      },
+      {
+        id: 'door_akl_to_courtyard_bottom',
         name: 'Exit to Courtyard',
         x: 330,
         y: 520,
@@ -224,9 +236,9 @@ export const MAP_ZONES: Record<ZoneId, ZoneMapData> = {
         id: 'asset_cabinet',
         type: 'archive_shelf',
         x: 90,
-        y: 360,
+        y: 400,
         w: 80,
-        h: 140,
+        h: 120,
         label: 'Asset Archive Shelves',
         interactive: true,
         inspectMessage: 'Ledger folder 1999-2024: "Golden Jubilee Trophy: Insured and registered under school heritage assets."'
@@ -251,15 +263,28 @@ export const MAP_ZONES: Record<ZoneId, ZoneMapData> = {
       { x: 580, y: 600, w: 320, h: 50 },
 
       { x: 0, y: 0, w: 40, h: 650 },
-      { x: 860, y: 0, w: 40, h: 650 },
+      // Right wall split with doorway for side exit back to Courtyard
+      { x: 860, y: 0, w: 40, h: 250 },
+      { x: 860, y: 370, w: 40, h: 280 },
       { x: 120, y: 150, w: 240, h: 130 },
       { x: 480, y: 150, w: 180, h: 100 },
-      { x: 740, y: 120, w: 100, h: 220 },
+      { x: 740, y: 100, w: 100, h: 140 },
       { x: 80, y: 380, w: 120, h: 160 }
     ],
     doors: [
       {
-        id: 'door_otomotif_to_courtyard',
+        id: 'door_otomotif_to_courtyard_right',
+        name: 'Exit to Courtyard',
+        x: 815,
+        y: 260,
+        w: 75,
+        h: 95,
+        targetZone: 'courtyard',
+        targetX: 130,
+        targetY: 330
+      },
+      {
+        id: 'door_otomotif_to_courtyard_bottom',
         name: 'Exit to Courtyard',
         x: 330,
         y: 520,
@@ -286,7 +311,7 @@ export const MAP_ZONES: Record<ZoneId, ZoneMapData> = {
         id: 'tool_bench',
         type: 'workbench',
         x: 750,
-        y: 180,
+        y: 110,
         w: 80,
         h: 120,
         label: 'Master Tool Bench',
@@ -312,15 +337,28 @@ export const MAP_ZONES: Record<ZoneId, ZoneMapData> = {
       { x: 0, y: 600, w: 320, h: 50 },
       { x: 580, y: 600, w: 320, h: 50 },
 
-      { x: 0, y: 0, w: 40, h: 650 },
+      // Left wall split with doorway for side exit back to Courtyard
+      { x: 0, y: 0, w: 40, h: 250 },
+      { x: 0, y: 370, w: 40, h: 280 },
       { x: 860, y: 0, w: 40, h: 650 },
       { x: 140, y: 140, w: 220, h: 110 },
       { x: 480, y: 140, w: 280, h: 100 },
-      { x: 80, y: 360, w: 130, h: 180 }
+      { x: 80, y: 380, w: 130, h: 160 }
     ],
     doors: [
       {
-        id: 'door_tjkt_to_courtyard',
+        id: 'door_tjkt_to_courtyard_left',
+        name: 'Exit to Courtyard',
+        x: 10,
+        y: 260,
+        w: 75,
+        h: 95,
+        targetZone: 'courtyard',
+        targetX: 960,
+        targetY: 355
+      },
+      {
+        id: 'door_tjkt_to_courtyard_bottom',
         name: 'Exit to Courtyard',
         x: 330,
         y: 520,

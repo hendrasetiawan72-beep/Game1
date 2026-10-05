@@ -244,12 +244,12 @@ class SoundManager {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = 'en-US';
-      utterance.rate = 0.9; // comfortable educational pace
+      utterance.rate = 0.88; // clear, comfortable educational cadence
 
       if (gender === 'female') {
-        utterance.pitch = 1.25; // Bright, clear female pitch
+        utterance.pitch = 1.22; // Natural, clear female pitch
       } else {
-        utterance.pitch = 0.82; // Deep, resonant masculine pitch
+        utterance.pitch = 0.82; // Deep, calm masculine pitch
       }
 
       const voices = window.speechSynthesis.getVoices();
@@ -258,17 +258,32 @@ class SoundManager {
         if (gender === 'female') {
           const femaleVoice = enVoices.find(v => {
             const name = v.name.toLowerCase();
-            return name.includes('female') || name.includes('zira') || name.includes('samantha') ||
-                   name.includes('victoria') || name.includes('karen') || name.includes('susan') ||
-                   name.includes('jenny') || name.includes('aria') || (name.includes('google') && !name.includes('uk english male'));
+            return (
+              name.includes('female') ||
+              name.includes('zira') ||
+              name.includes('samantha') ||
+              name.includes('victoria') ||
+              name.includes('karen') ||
+              name.includes('susan') ||
+              name.includes('jenny') ||
+              name.includes('aria') ||
+              (name.includes('google') && !name.includes('uk english male'))
+            );
           });
           if (femaleVoice) utterance.voice = femaleVoice;
         } else {
           const maleVoice = enVoices.find(v => {
             const name = v.name.toLowerCase();
-            return name.includes('male') || name.includes('david') || name.includes('george') ||
-                   name.includes('guy') || name.includes('james') || name.includes('guy') ||
-                   name.includes('daniel') || name.includes('mark') || name.includes('steffan');
+            return (
+              name.includes('male') ||
+              name.includes('david') ||
+              name.includes('george') ||
+              name.includes('guy') ||
+              name.includes('james') ||
+              name.includes('daniel') ||
+              name.includes('mark') ||
+              name.includes('steffan')
+            );
           });
           if (maleVoice) utterance.voice = maleVoice;
         }
